@@ -179,6 +179,7 @@
             <option value="30_3mob">30+ @ 3MoB</option>
             <option value="30_6mob">30+ @ 6MoB</option>
             <option value="90_9mob">90+ @ 9MoB</option>
+            <option value="90_12mob">90+ @ 12MoB</option>
           </select>
         </div>
       </div>
@@ -233,7 +234,8 @@
         filter1Field: 'CANAL2',
         filter2Label: 'BR_HIT_DES',
         filter2Field: 'BR_HIT_DES',
-        lineColor: '#7b1fa2'
+        lineColor: '#7b1fa2',
+        modelUpdateCohort: 'Nov 2025'
       },
       departamental: {
         name: 'suburbia departamental',
@@ -243,7 +245,8 @@
         filter1Field: 'CANAL2',
         filter2Label: 'BR_HIT_DES',
         filter2Field: 'BR_HIT_DES',
-        lineColor: '#92278f'
+        lineColor: '#92278f',
+        modelUpdateCohort: 'Jul 2024'
       },
       minipagos: {
         name: 'minipagos',
@@ -253,7 +256,8 @@
         filter1Field: 'BR_TIPO_TRAMITE',
         filter2Label: 'SEGMENTO BC',
         filter2Field: 'SEGMENTO_BC',
-        lineColor: '#059669'
+        lineColor: '#059669',
+        modelUpdateCohort: 'Mar 2025'
       }
     };
 
@@ -442,6 +446,52 @@
             saldos:   { targetMin: 7.20, target: 9.03, targetMax: 10.50 }
           }
         }
+      },
+      {
+        id: '90_12mob',
+        title: { default: '90+ @ 12MoB', minipagos: '90+ @ 12MoB' },
+        ctaMoraCol: { default: 'CTA_90_12M', minipagos: 'CTA_90_12M' },
+        ctaTotCol: 'CTA_TOT_12M',
+        sdoMoraCol: { default: 'SDO_90_12M', minipagos: 'SDO_90_12M' },
+        sdoTotCol: 'SDO_TOT_12M',
+        ctaMoraAdjCol: 'CTA_90_12M_ADJ', ctaTotAdjCol: 'CTA_TOT_12M_ADJ',
+        sdoMoraAdjCol: 'SDO_90_12M_ADJ', sdoTotAdjCol: 'SDO_TOT_12M_ADJ',
+        scales: {
+          visa: {
+            accounts: { min: 0, max: 6, stepSize: 2 },
+            saldos:   { min: 0, max: 12, stepSize: 2 }
+          },
+          minipagos: {
+            accounts: { min: 0, max: 30, stepSize: 10 },
+            saldos:   { min: 0, max: 100, stepSize: 25 }
+          },
+          departamental: {
+            accounts: { min: 0, max: 6, stepSize: 2 },
+            saldos:   { min: 0, max: 15, stepSize: 5 }
+          },
+          default: {
+            accounts: { min: 0, max: 10, stepSize: 1 },
+            saldos:   { min: 0, max: 30, stepSize: 5 }
+          }
+        },
+        targets: {
+          visa: {
+            accounts: { targetMin: 2.10, target: 2.50, targetMax: 2.90 },
+            saldos:   { targetMin: 6.50, target: 7.80, targetMax: 9.10 }
+          },
+          departamental: {
+            accounts: { targetMin: 2.80, target: 3.60, targetMax: 4.50 },
+            saldos:   { targetMin: 8.00, target: 10.50, targetMax: 13.00 }
+          },
+          minipagos: {
+            accounts: { targetMin: 10.5, target: 11.5, targetMax: 12.0 },
+            saldos:   { targetMin: 30.0, target: 32.5, targetMax: 34.0 }
+          },
+          default: {
+            accounts: { targetMin: 2.50, target: 3.20, targetMax: 4.00 },
+            saldos:   { targetMin: 8.00, target: 10.00, targetMax: 12.00 }
+          }
+        }
       }
     ];
 
@@ -513,6 +563,33 @@
         drawTargetLine(targetMin, '#10b981', [4, 3]);
         drawTargetLine(target, '#f59e0b', [6, 4]);
         drawTargetLine(targetMax, '#ef4444', [3, 3]);
+
+        ctx.restore();
+      }
+    };
+
+    // VERTICAL MODEL UPDATE LINE PLUGIN FOR CHART.JS
+    const modelUpdateLinePlugin = {
+      id: 'modelUpdateLinePlugin',
+      beforeDraw(chart) {
+        const modelCohort = chart.config.options.plugins.customModelUpdate;
+        if (!modelCohort) return;
+
+        const { ctx, chartArea: { top, bottom, left, right }, scales: { x } } = chart;
+        const xPixel = x.getPixelForValue(modelCohort);
+
+        if (xPixel === undefined || isNaN(xPixel) || xPixel < left || xPixel > right) return;
+
+        ctx.save();
+        
+        // Draw dotted vertical line
+        ctx.beginPath();
+        ctx.setLineDash([4, 4]);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#d946ef';
+        ctx.moveTo(xPixel, top);
+        ctx.lineTo(xPixel, bottom);
+        ctx.stroke();
 
         ctx.restore();
       }
@@ -594,9 +671,22 @@
       document.getElementById('label-filter-1').innerText = prod.filter1Label;
       document.getElementById('label-filter-2').innerText = prod.filter2Label;
 
-      // Update seasonality metric select dropdown text dynamically
+      // Update seasonality metric select dropdown options and visibility dynamically
       const seasonalitySelect = document.getElementById('seasonality-metric-select');
       if (seasonalitySelect) {
+        const option9012 = seasonalitySelect.querySelector('option[value="90_12mob"]');
+        if (option9012) {
+          if (currentProduct === 'minipagos') {
+            option9012.style.display = 'none';
+            if (selectedSeasonalityMetric === '90_12mob') {
+              selectedSeasonalityMetric = 'entry_2mob';
+            }
+          } else {
+            option9012.style.display = '';
+          }
+        }
+        seasonalitySelect.value = selectedSeasonalityMetric;
+
         METRICS_DEFINITIONS.forEach(m => {
           const option = seasonalitySelect.querySelector(`option[value="${m.id}"]`);
           if (option) {
@@ -674,11 +764,35 @@
       const cohortMap = {};
 
       dataRows.forEach(r => {
-        const rawDate = new Date(r.COSECHA);
-        if (isNaN(rawDate.getTime())) return;
+        if (!r.COSECHA) return;
+
+        let year, monthIdx, rawDate;
+
+        // Parse date components directly in UTC to prevent timezone offset rollback (e.g., 2026-07-01 UTC becoming June 30 in local time)
+        if (typeof r.COSECHA === 'string') {
+          const parts = r.COSECHA.split(/[-T/]/);
+          if (parts.length >= 2) {
+            year = parseInt(parts[0], 10);
+            monthIdx = parseInt(parts[1], 10) - 1; // 0-indexed month
+            const day = parts[2] ? parseInt(parts[2], 10) : 1;
+            rawDate = new Date(Date.UTC(year, monthIdx, day));
+          }
+        } else if (r.COSECHA instanceof Date) {
+          rawDate = r.COSECHA;
+          year = rawDate.getUTCFullYear();
+          monthIdx = rawDate.getUTCMonth();
+        }
+
+        if (!rawDate || isNaN(rawDate.getTime())) {
+          const fallbackDate = new Date(r.COSECHA);
+          if (isNaN(fallbackDate.getTime())) return;
+          rawDate = fallbackDate;
+          year = rawDate.getUTCFullYear();
+          monthIdx = rawDate.getUTCMonth();
+        }
 
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        const cohortKey = `${months[rawDate.getMonth()]} ${rawDate.getFullYear()}`;
+        const cohortKey = `${months[monthIdx]} ${year}`;
 
         if (!cohortMap[cohortKey]) {
           cohortMap[cohortKey] = { rawDate: rawDate };
@@ -713,6 +827,9 @@
       const prodConfig = PRODUCTS_CONFIG[currentProduct];
 
       METRICS_DEFINITIONS.forEach(metric => {
+        // Omite la gráfica de 90+ @ 12MoB únicamente para el producto Minipagos
+        if (currentProduct === 'minipagos' && metric.id === '90_12mob') return;
+
         const metricTitle = getMetricProperty(metric, 'title');
         const ctaMoraCol = getMetricProperty(metric, 'ctaMoraCol');
         const ctaTotCol = getMetricProperty(metric, 'ctaTotCol');
@@ -890,7 +1007,7 @@
       const chart = new Chart(ctx, {
         type: 'line',
         data: { labels: cohortLabels, datasets: datasets },
-        plugins: [targetLinesPlugin],
+        plugins: [targetLinesPlugin, modelUpdateLinePlugin],
         options: {
           responsive: true,
           maintainAspectRatio: false,
@@ -899,7 +1016,31 @@
             legend: {
               display: true,
               position: 'bottom',
-              labels: { boxWidth: 14, font: { size: 10, family: 'Montserrat', weight: '600' }, color: '#4b5563' }
+              labels: {
+                boxWidth: 16,
+                font: { size: 10, family: 'Montserrat', weight: '600' },
+                color: '#4b5563',
+                generateLabels: (chart) => {
+                  const defaultLabels = Chart.defaults.plugins.legend.labels.generateLabels(chart);
+                  const modelCohort = chart.config.options.plugins.customModelUpdate;
+                  if (modelCohort) {
+                    defaultLabels.push({
+                      text: 'Implementación del último modelo',
+                      fillStyle: '#fdf4ff',
+                      strokeStyle: '#d946ef',
+                      lineWidth: 2,
+                      lineDash: [3, 3],
+                      hidden: false
+                    });
+                  }
+                  return defaultLabels;
+                }
+              },
+              onClick: (e, legendItem, legend) => {
+                if (legendItem.datasetIndex !== undefined && legendItem.datasetIndex >= 0) {
+                  Chart.defaults.plugins.legend.onClick.call(this, e, legendItem, legend);
+                }
+              }
             },
             tooltip: {
               backgroundColor: '#0f172a',
@@ -914,15 +1055,24 @@
               callbacks: {
                 title: (ctxArr) => ctxArr[0].label,
                 label: (ctx) => ` ■ ${ctx.dataset.label}: ${ctx.parsed.y !== null ? ctx.parsed.y + '%' : 'N/A'}`,
-                afterBody: () => [
-                  '',
-                  `Target Min: ${dataObj.targetMin}%`,
-                  `Target: ${dataObj.target}%`,
-                  `Target Max: ${dataObj.targetMax}%`
-                ]
+                afterBody: (ctxArr) => {
+                  const lines = [
+                    '',
+                    `Target Min: ${dataObj.targetMin}%`,
+                    `Target: ${dataObj.target}%`,
+                    `Target Max: ${dataObj.targetMax}%`
+                  ];
+                  const currentLabel = ctxArr[0]?.label;
+                  const modelCohort = prodConfig.modelUpdateCohort;
+                  if (currentLabel === modelCohort) {
+                    lines.unshift('------------------------', '⚡ Implementación del último modelo');
+                  }
+                  return lines;
+                }
               }
             },
-            customTarget: { target: dataObj.target, targetMin: dataObj.targetMin, targetMax: dataObj.targetMax }
+            customTarget: { target: dataObj.target, targetMin: dataObj.targetMin, targetMax: dataObj.targetMax },
+            customModelUpdate: prodConfig.modelUpdateCohort
           },
           scales: {
             x: { grid: { display: false }, ticks: { font: { size: 9, family: 'Montserrat' }, color: '#333333', maxRotation: 45, minRotation: 45 } },
