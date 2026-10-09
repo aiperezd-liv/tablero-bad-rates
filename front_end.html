@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bad Rates Dashboard - Riesgos Negocios Financieros</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Font: Montserrat -->
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Montserrat', 'sans-serif'],
+          },
+          colors: {
+            brandPurple: '#7b1fa2',
+            suburbiaPink: '#92278f',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #f5f6f8;
+      font-family: 'Montserrat', sans-serif;
+      color: #333333;
+    }
+    .card-shadow {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+    .tab-btn.active {
+      background-color: #ffffff;
+      color: #92278f;
+      border-bottom: 3px solid #92278f;
+      font-weight: 700;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .dropdown-shadow {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+    .year-chip {
+      transition: all 0.2s ease-in-out;
+      user-select: none;
+    }
+    .year-chip.active {
+      border-color: #92278f;
+      background-color: #fdf4ff;
+      color: #701a75;
+      font-weight: 700;
+      box-shadow: 0 2px 4px rgba(146, 39, 143, 0.15);
+    }
+  </style>
+</head>
+<body class="p-3 md:p-6 min-h-screen flex flex-col">
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Loading Overlay -->
+  <div id="loading-overlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex flex-col items-center justify-center text-white transition-opacity duration-300">
+    <div class="w-12 h-12 border-4 border-purple-400 border-t-transparent rounded-full animate-spin mb-3"></div>
+    <p class="font-bold text-sm tracking-wider uppercase">Cargando datos desde Google Sheets...</p>
+    <p class="text-xs text-purple-200 mt-1">Obteniendo métricas y cosechas actualizadas</p>
+  </div>
+
+  <!-- Main Container -->
+  <main class="max-w-[1400px] w-full mx-auto flex-grow flex flex-col gap-6">
+
+    <!-- 1. Header Banner -->
+    <div class="bg-white rounded-xl p-4 md:p-6 card-shadow flex flex-col md:flex-row items-center justify-between gap-6">
+      <!-- Card Preview -->
+      <div class="flex items-center justify-center min-w-[150px]">
+        <div id="product-card-preview" class="w-36 h-22 rounded-xl bg-gradient-to-tr from-gray-950 via-slate-900 to-zinc-800 p-3 text-white flex flex-col justify-between shadow-md relative overflow-hidden transition-all duration-300">
+          <div class="flex justify-between items-center">
+            <span id="card-type-label" class="text-[10px] uppercase font-bold tracking-widest text-purple-200">Tarjeta Visa</span>
+            <span class="text-xs font-bold tracking-tighter italic">s</span>
+          </div>
+          <div class="w-6 h-4 bg-yellow-400/80 rounded-sm"></div>
+          <div class="text-right">
+            <span id="product-name-badge" class="text-xs font-extrabold tracking-wider uppercase block">suburbia visa</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center Title -->
+      <div class="text-center flex-1">
+        <h1 class="text-3xl md:text-4xl font-extrabold text-gray-700 tracking-tight uppercase">BAD RATES</h1>
+      </div>
+
+      <!-- Right Logo -->
+      <div class="flex flex-col items-end text-right min-w-[180px]">
+        <div class="flex items-center gap-1 text-pink-600 text-xs font-bold tracking-widest uppercase">
+          <span>R I E S G O S</span>
+          <span class="flex text-[8px] space-x-0.5 text-pink-400">●●●</span>
+        </div>
+        <div class="text-[10px] text-gray-400 font-medium tracking-tight">NEGOCIOS FINANCIEROS</div>
+        <div class="text-[9px] text-pink-500 font-semibold mt-0.5">El Puerto de Liverpool</div>
+      </div>
+    </div>
+
+    <!-- 2. Product Tabs -->
+    <div class="bg-white rounded-xl p-2.5 shadow-sm flex items-center justify-center border border-gray-100">
+      <nav class="flex space-x-2 bg-gray-100 p-1 rounded-lg">
+        <button onclick="switchProduct('visa')" id="tab-visa" class="tab-btn active px-5 py-2 rounded-md text-sm font-semibold text-gray-600 transition-all flex items-center gap-2">
+          <i class="fa-brands fa-cc-visa text-slate-900"></i> Visa
+        </button>
+        <button onclick="switchProduct('departamental')" id="tab-departamental" class="tab-btn px-5 py-2 rounded-md text-sm font-semibold text-gray-600 transition-all flex items-center gap-2">
+          <i class="fa-solid fa-credit-card text-purple-600"></i> Departamental
+        </button>
+        <button onclick="switchProduct('minipagos')" id="tab-minipagos" class="tab-btn px-5 py-2 rounded-md text-sm font-semibold text-gray-600 transition-all flex items-center gap-2">
+          <i class="fa-solid fa-hand-holding-dollar text-emerald-600"></i> Minipagos
+        </button>
+      </nav>
+    </div>
+
+    <!-- 3. Dynamic Dropdowns Controls -->
+    <div class="flex flex-wrap items-center justify-center gap-6 my-1">
+      <!-- Dynamic Filter 1 (CANAL / TIPO DE TRAMITE) -->
+      <div class="relative w-64 bg-white rounded-lg dropdown-shadow">
+        <label id="label-filter-1" for="filter-1" class="block text-[10px] font-bold text-gray-400 px-3 pt-2 uppercase">CANAL</label>
+        <select id="filter-1" onchange="applyFilters()" class="w-full bg-transparent font-semibold text-gray-700 px-3 pb-2 text-sm focus:outline-none cursor-pointer">
+          <option value="TODOS">TODOS</option>
+        </select>
+      </div>
+
+      <!-- Dynamic Filter 2 (BR_HIT_DES / SEGMENTO_BC) -->
+      <div class="relative w-64 bg-white rounded-lg dropdown-shadow">
+        <label id="label-filter-2" for="filter-2" class="block text-[10px] font-bold text-gray-400 px-3 pt-2 uppercase">BR_HIT_DES</label>
+        <select id="filter-2" onchange="applyFilters()" class="w-full bg-transparent font-semibold text-gray-700 px-3 pb-2 text-sm focus:outline-none cursor-pointer">
+          <option value="TODOS">TODOS</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Column Headers -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
+      <div class="text-center font-bold text-gray-600 text-xl tracking-wide flex items-center justify-center gap-2">
+        <i class="fa-solid fa-users text-purple-600 text-base"></i> # Cuentas
+      </div>
+      <div class="text-center font-bold text-gray-600 text-xl tracking-wide flex items-center justify-center gap-2">
+        <i class="fa-solid fa-sack-dollar text-emerald-600 text-base"></i> $ Saldos
+      </div>
+    </div>
+
+    <!-- 4. Main Charts Grid -->
+    <div id="charts-wrapper" class="flex flex-col gap-8">
+      <!-- Injected via JS -->
+    </div>
+
+    <!-- 5. ESTACIONALIDAD SECTION -->
+    <div class="bg-white rounded-2xl p-5 md:p-6 card-shadow mt-6 mb-12 flex flex-col gap-6 border border-gray-100">
+      
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-4">
+        <div class="flex items-center gap-2.5">
+          <div class="p-2 bg-purple-100 text-purple-700 rounded-lg">
+            <i class="fa-solid fa-chart-line text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-extrabold text-gray-800 tracking-tight uppercase">ESTACIONALIDAD</h2>
+            <p class="text-xs text-gray-400 font-medium">Comparativo Año con Año (Enero - Diciembre)</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <label for="seasonality-metric-select" class="text-xs font-bold text-gray-500 uppercase whitespace-nowrap">Periodo Mora:</label>
+          <select id="seasonality-metric-select" onchange="onSeasonalityMetricChange(this.value)" class="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs font-bold text-purple-900 focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer">
+            <option value="entry_2mob">Entry @ 2MoB</option>
+            <option value="30_3mob">30+ @ 3MoB</option>
+            <option value="30_6mob">30+ @ 6MoB</option>
+            <option value="90_9mob">90+ @ 9MoB</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Seleccionar Años a Comparar:</span>
+          <div class="flex items-center gap-2">
+            <button onclick="selectAllYears(true)" class="text-[11px] font-bold text-purple-600 hover:text-purple-800 hover:underline px-2 py-0.5">Todos</button>
+            <span class="text-gray-300">|</span>
+            <button onclick="selectAllYears(false)" class="text-[11px] font-bold text-gray-400 hover:text-gray-600 hover:underline px-2 py-0.5">Limpiar</button>
+          </div>
+        </div>
+        
+        <div id="year-chips-container" class="flex flex-wrap items-center gap-2 pt-1">
+          <!-- Year Pills -->
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+        <div class="flex flex-col gap-2">
+          <h3 class="text-sm font-bold text-gray-600 flex items-center gap-1.5">
+            <i class="fa-solid fa-users text-purple-600 text-xs"></i> # Cuentas - Estacionalidad
+          </h3>
+          <div class="relative h-[300px] w-full bg-gray-50/50 rounded-xl p-3 border border-gray-100">
+            <canvas id="seasonality_chart_accounts"></canvas>
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <h3 class="text-sm font-bold text-gray-600 flex items-center gap-1.5">
+            <i class="fa-solid fa-sack-dollar text-emerald-600 text-xs"></i> $ Saldos - Estacionalidad
+          </h3>
+          <div class="relative h-[300px] w-full bg-gray-50/50 rounded-xl p-3 border border-gray-100">
+            <canvas id="seasonality_chart_saldos"></canvas>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <script>
+    /* PRODUCTS CONFIGURATION */
+    const PRODUCTS_CONFIG = {
+      visa: {
+        name: 'suburbia visa',
+        cardType: 'Tarjeta Visa',
+        gradient: 'from-gray-950 via-slate-900 to-zinc-800',
+        filter1Label: 'CANAL',
+        filter1Field: 'CANAL2',
+        filter2Label: 'BR_HIT_DES',
+        filter2Field: 'BR_HIT_DES',
+        lineColor: '#7b1fa2'
+      },
+      departamental: {
+        name: 'suburbia departamental',
+        cardType: 'Tarjeta Departamental',
+        gradient: 'from-purple-900 via-purple-800 to-pink-800',
+        filter1Label: 'CANAL',
+        filter1Field: 'CANAL2',
+        filter2Label: 'BR_HIT_DES',
+        filter2Field: 'BR_HIT_DES',
+        lineColor: '#92278f'
+      },
+      minipagos: {
+        name: 'minipagos',
+        cardType: 'Crédito Minipagos',
+        gradient: 'from-emerald-900 via-teal-800 to-slate-900',
+        filter1Label: 'TIPO DE TRÁMITE',
+        filter1Field: 'BR_TIPO_TRAMITE',
+        filter2Label: 'SEGMENTO BC',
+        filter2Field: 'SEGMENTO_BC',
+        lineColor: '#059669'
+      }
+    };
+
+    /* METRIC DEFINITIONS WITH PRODUCT SPECIFIC TARGETS AND SCALES */
+    const METRICS_DEFINITIONS = [
+      {
+        id: 'entry_2mob',
+        title: { default: 'Entry @ 2MoB', minipagos: 'Entry @ 2MoB' },
+        ctaMoraCol: { default: 'CTA_ENTRY_2M', minipagos: 'CTA_ENTRY_2M' },
+        ctaTotCol: 'CTA_TOT_2M',
+        sdoMoraCol: { default: 'SDO_ENTRY_2M', minipagos: 'SDO_ENTRY_2M' },
+        sdoTotCol: 'SDO_TOT_2M',
+        ctaMoraAdjCol: 'CTA_ENTRY_2M_ADJ', ctaTotAdjCol: 'CTA_TOT_2M_ADJ',
+        sdoMoraAdjCol: 'SDO_ENTRY_2M_ADJ', sdoTotAdjCol: 'SDO_TOT_2M_ADJ',
+        scales: {
+          visa: {
+            accounts: { min: 0, max: 6, stepSize: 2 },
+            saldos:   { min: 0, max: 10, stepSize: 2 }
+          },
+          minipagos: {
+            accounts: { min: 0, max: 30, stepSize: 10 },
+            saldos:   { min: 0, max: 80, stepSize: 20 }
+          },
+          departamental: {
+            accounts: { min: 0, max: 6, stepSize: 2 },
+            saldos:   { min: 0, max: 15, stepSize: 5 }
+          },
+          default: {
+            accounts: { min: 0, max: 10, stepSize: 1 },
+            saldos:   { min: 0, max: 30, stepSize: 5 }
+          }
+        },
+        targets: {
+          visa: {
+            accounts: { targetMin: 1.08, target: 1.35, targetMax: 1.69 },
+            saldos:   { targetMin: 2.23, target: 3.09, targetMax: 3.84 }
+          },
+          departamental: {
+            accounts: { targetMin: 1.46, target: 1.95, targetMax: 2.53 },
+            saldos:   { targetMin: 3.14, target: 4.18, targetMax: 5.44 }
+          },
+          minipagos: {
+            accounts: { targetMin: 6.4, target: 7.5, targetMax: 8.7 },
+            saldos:   { targetMin: 16.0, target: 19.1, targetMax: 22.0 }
+          },
+          default: {
+            accounts: { targetMin: 1.45, target: 1.95, targetMax: 2.50 },
+            saldos:   { targetMin: 3.30, target: 4.30, targetMax: 5.00 }
+          }
+        }
+      },
+      {
+        id: '30_3mob',
+        title: { default: '30+ @ 3MoB', minipagos: '30+ @ 3MoB' },
+        ctaMoraCol: { default: 'CTA_30_3M', minipagos: 'CTA_30_3M' },
+        ctaTotCol: 'CTA_TOT_3M',
+        sdoMoraCol: { default: 'SDO_30_3M', minipagos: 'SDO_30_3M' },
+        sdoTotCol: 'SDO_TOT_3M',
+        ctaMoraAdjCol: 'CTA_30_3M_ADJ', ctaTotAdjCol: 'CTA_TOT_3M_ADJ',
+        sdoMoraAdjCol: 'SDO_30_3M_ADJ', sdoTotAdjCol: 'SDO_TOT_3M_ADJ',
+        scales: {
+          visa: {
+            accounts: { min: 0, max: 6, stepSize: 2 },
+            saldos:   { min: 0, max: 10, stepSize: 2 }
+          },
+          minipagos: {
+            accounts: { min: 0, max: 30, stepSize: 10 },
+            saldos:   { min: 0, max: 80, stepSize: 20 }
+          },
+          departamental: {
+            accounts: { min: 0, max: 6, stepSize: 2 },
+            saldos:   { min: 0, max: 15, stepSize: 5 }
+          },
+          default: {
+            accounts: { min: 0, max: 10, stepSize: 1 },
+            saldos:   { min: 0, max: 30, stepSize: 5 }
+          }
+        },
+        targets: {
+          visa: {
+            accounts: { targetMin: 0.47, target: 0.63, targetMax: 0.78 },
+            saldos:   { targetMin: 1.45, target: 2.01, targetMax: 2.57 }
+          },
+          departamental: {
+            accounts: { targetMin: 0.75, target: 1.00, targetMax: 1.30 },
+            saldos:   { targetMin: 2.16, target: 2.88, targetMax: 3.74 }
+          },
+          minipagos: {
+            accounts: { targetMin: 4.4, target: 5.2, targetMax: 6.0 },
+            saldos:   { targetMin: 11.7, target: 14.3, targetMax: 16.4 }
+          },
+          default: {
+            accounts: { targetMin: 0.80, target: 1.06, targetMax: 1.35 },
+            saldos:   { targetMin: 2.00, target: 2.72, targetMax: 3.50 }
+          }
+        }
+      },
+      {
+        id: '30_6mob',
+        title: { default: '30+ @ 6MoB', minipagos: '60+ @ 6MoB' },
+        ctaMoraCol: { default: 'CTA_30_6M', minipagos: 'CTA_60_6M' },
+        ctaTotCol: 'CTA_TOT_6M',
+        sdoMoraCol: { default: 'SDO_30_6M', minipagos: 'SDO_60_6M' },
+        sdoTotCol: 'SDO_TOT_6M',
+        ctaMoraAdjCol: 'CTA_30_6M_ADJ', ctaTotAdjCol: 'CTA_TOT_6M_ADJ',
+        sdoMoraAdjCol: 'SDO_30_6M_ADJ', sdoTotAdjCol: 'SDO_TOT_6M_ADJ',
+        scales: {
+          visa: {
+            accounts: { min: 0, max: 6, stepSize: 2 },
+            saldos:   { min: 0, max: 10, stepSize: 2 }
+          },
+          minipagos: {
+            accounts: { min: 0, max: 30, stepSize: 10 },
+            saldos:   { min: 0, max: 80, stepSize: 20 }
+          },
+          departamental: {
+            accounts: { min: 0, max: 6, stepSize: 2 },
+            saldos:   { min: 0, max: 15, stepSize: 5 }
+          },
+          default: {
+            accounts: { min: 0, max: 10, stepSize: 1 },
+            saldos:   { min: 0, max: 30, stepSize: 5 }
+          }
+        },
+        targets: {
+          visa: {
+            accounts: { targetMin: 1.65, target: 2.01, targetMax: 2.37 },
+            saldos:   { targetMin: 4.83, target: 5.82, targetMax: 6.82 }
+          },
+          departamental: {
+            accounts: { targetMin: 2.43, target: 3.24, targetMax: 4.21 },
+            saldos:   { targetMin: 6.35, target: 8.46, targetMax: 11.00 }
+          },
+          minipagos: {
+            accounts: { targetMin: 7.6, target: 8.7, targetMax: 9.8 },
+            saldos:   { targetMin: 16.0, target: 22.4, targetMax: 26.0 }
+          },
+          default: {
+            accounts: { targetMin: 2.50, target: 3.04, targetMax: 3.60 },
+            saldos:   { targetMin: 6.20, target: 8.46, targetMax: 11.00 }
+          }
+        }
+      },
+      {
+        id: '90_9mob',
+        title: { default: '90+ @ 9MoB', minipagos: '90+ @ 9MoB' },
+        ctaMoraCol: { default: 'CTA_90_9M', minipagos: 'CTA_90_9M' },
+        ctaTotCol: 'CTA_TOT_9M',
+        sdoMoraCol: { default: 'SDO_90_9M', minipagos: 'SDO_90_9M' },
+        sdoTotCol: 'SDO_TOT_9M',
+        ctaMoraAdjCol: 'CTA_90_9M_ADJ', ctaTotAdjCol: 'CTA_TOT_9M_ADJ',
+        sdoMoraAdjCol: 'SDO_90_9M_ADJ', sdoTotAdjCol: 'SDO_TOT_9M_ADJ',
+        scales: {
+          visa: {
+            accounts: { min: 0, max: 6, stepSize: 2 },
+            saldos:   { min: 0, max: 10, stepSize: 2 }
+          },
+          minipagos: {
+            accounts: { min: 0, max: 30, stepSize: 10 },
+            saldos:   { min: 0, max: 100, stepSize: 25 }
+          },
+          departamental: {
+            accounts: { min: 0, max: 6, stepSize: 2 },
+            saldos:   { min: 0, max: 15, stepSize: 5 }
+          },
+          default: {
+            accounts: { min: 0, max: 10, stepSize: 1 },
+            saldos:   { min: 0, max: 30, stepSize: 5 }
+          }
+        },
+        targets: {
+          visa: {
+            accounts: { targetMin: 1.57, target: 1.90, targetMax: 2.22 },
+            saldos:   { targetMin: 4.84, target: 5.80, targetMax: 6.76 }
+          },
+          departamental: {
+            accounts: { targetMin: 2.18, target: 2.91, targetMax: 3.78 },
+            saldos:   { targetMin: 6.27, target: 8.36, targetMax: 10.87 }
+          },
+          minipagos: {
+            accounts: { targetMin: 10.0, target: 11.1, targetMax: 11.5 },
+            saldos:   { targetMin: 29.8, target: 31.1, targetMax: 32.5 }
+          },
+          default: {
+            accounts: { targetMin: 2.10, target: 2.79, targetMax: 3.30 },
+            saldos:   { targetMin: 7.20, target: 9.03, targetMax: 10.50 }
+          }
+        }
+      }
+    ];
+
+    function getMetricProperty(metric, propName, productKey = currentProduct) {
+      const val = metric[propName];
+      if (val && typeof val === 'object' && !Array.isArray(val) && (val.default !== undefined || val[productKey] !== undefined)) {
+        return val[productKey] !== undefined ? val[productKey] : val.default;
+      }
+      return val;
+    }
+
+    function getMetricTargets(metric, productKey) {
+      if (metric.targets && metric.targets[productKey]) {
+        return metric.targets[productKey];
+      }
+      return metric.targets ? metric.targets.default : {
+        accounts: { targetMin: 1.0, target: 2.0, targetMax: 3.0 },
+        saldos: { targetMin: 3.0, target: 5.0, targetMax: 7.0 }
+      };
+    }
+
+    const AVAILABLE_YEARS = [2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026];
+    const YEAR_COLORS = {
+      2019: '#64748b', 2020: '#ef4444', 2021: '#f59e0b', 2022: '#10b981',
+      2023: '#06b6d4', 2024: '#3b82f6', 2025: '#8b5cf6', 2026: '#d946ef'
+    };
+    const MONTHS_12 = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+    // STATE VARIABLES
+    let rawDataTotal = [];
+    let rawDataECC = [];
+    let currentProduct = 'visa';
+    let selectedYears = [2021, 2022, 2023, 2024, 2025, 2026];
+    let selectedSeasonalityMetric = 'entry_2mob';
+    let chartInstances = {};
+    let cohortLabels = [];
+
+    // TARGET LINES PLUGIN FOR CHART.JS
+    const targetLinesPlugin = {
+      id: 'targetLinesPlugin',
+      beforeDraw(chart) {
+        const { ctx, chartArea: { left, right, top, bottom }, scales: { y } } = chart;
+        const targetObj = chart.config.options.plugins.customTarget;
+        if (!targetObj) return;
+
+        const { target, targetMin, targetMax } = targetObj;
+
+        ctx.save();
+
+        if (targetMin !== undefined && targetMax !== undefined) {
+          const yMinPixel = y.getPixelForValue(targetMin);
+          const yMaxPixel = y.getPixelForValue(targetMax);
+          ctx.fillStyle = 'rgba(239, 68, 68, 0.05)';
+          ctx.fillRect(left, Math.min(yMinPixel, yMaxPixel), right - left, Math.abs(yMinPixel - yMaxPixel));
+        }
+
+        const drawTargetLine = (val, color, dashPattern) => {
+          if (val === undefined || val === null) return;
+          const yPixel = y.getPixelForValue(val);
+          ctx.beginPath();
+          ctx.setLineDash(dashPattern);
+          ctx.lineWidth = 1.5;
+          ctx.strokeStyle = color;
+          ctx.moveTo(left, yPixel);
+          ctx.lineTo(right, yPixel);
+          ctx.stroke();
+        };
+
+        drawTargetLine(targetMin, '#10b981', [4, 3]);
+        drawTargetLine(target, '#f59e0b', [6, 4]);
+        drawTargetLine(targetMax, '#ef4444', [3, 3]);
+
+        ctx.restore();
+      }
+    };
+
+    // Custom Toast Notification System
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      
+      const isError = type === 'error';
+      const bgColor = isError ? 'bg-red-600' : 'bg-slate-800';
+      
+      toast.className = `${bgColor} text-white px-4 py-3 rounded-lg shadow-xl text-xs font-semibold flex items-center gap-2 pointer-events-auto transition-all duration-300 transform translate-y-2 opacity-0`;
+      toast.innerHTML = `
+        <i class="fa-solid ${isError ? 'fa-circle-exclamation' : 'fa-circle-info'} text-sm"></i>
+        <span>${message}</span>
+      `;
+
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      }, 50);
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0');
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+
+    // FETCH DATA FROM GOOGLE APPS SCRIPT
+    function fetchBackendData() {
+      document.getElementById('loading-overlay').classList.remove('hidden');
+
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        google.script.run
+          .withSuccessHandler(onDataLoaded)
+          .withFailureHandler(onDataError)
+          .getDashboardData();
+      } else {
+        // Fallback Mock Generator for testing outside Apps Script (Preview mode)
+        setTimeout(() => {
+          generateMockBackendData();
+          document.getElementById('loading-overlay').classList.add('hidden');
+          setupDashboard();
+          showToast('Modo de prueba activado (Datos simulados cargados)', 'info');
+        }, 500);
+      }
+    }
+
+    function onDataLoaded(response) {
+      document.getElementById('loading-overlay').classList.add('hidden');
+      if (response && response.success) {
+        rawDataTotal = response.dataTotal || [];
+        rawDataECC = response.dataECC || [];
+        setupDashboard();
+        showToast('Datos cargados correctamente desde Google Sheets', 'info');
+      } else {
+        showToast('Error al cargar datos: ' + (response ? response.error : 'Respuesta nula'), 'error');
+      }
+    }
+
+    function onDataError(err) {
+      document.getElementById('loading-overlay').classList.add('hidden');
+      console.error('Error de Apps Script:', err);
+      showToast('Cargando muestra simulada...', 'info');
+      generateMockBackendData();
+      setupDashboard();
+    }
+
+    function setupDashboard() {
+      updateFilterControls();
+      renderDashboard();
+    }
+
+    function updateFilterControls() {
+      const prod = PRODUCTS_CONFIG[currentProduct];
+      document.getElementById('label-filter-1').innerText = prod.filter1Label;
+      document.getElementById('label-filter-2').innerText = prod.filter2Label;
+
+      // Update seasonality metric select dropdown text dynamically
+      const seasonalitySelect = document.getElementById('seasonality-metric-select');
+      if (seasonalitySelect) {
+        METRICS_DEFINITIONS.forEach(m => {
+          const option = seasonalitySelect.querySelector(`option[value="${m.id}"]`);
+          if (option) {
+            option.textContent = getMetricProperty(m, 'title');
+          }
+        });
+      }
+
+      const dataset = currentProduct === 'minipagos' ? rawDataECC : rawDataTotal.filter(r => {
+        if (currentProduct === 'visa') return String(r.TIP_INF) === '200';
+        if (currentProduct === 'departamental') return String(r.TIP_INF) === '210';
+        return true;
+      });
+
+      const set1 = new Set();
+      const set2 = new Set();
+
+      dataset.forEach(r => {
+        if (r[prod.filter1Field]) set1.add(String(r[prod.filter1Field]).trim());
+        if (r[prod.filter2Field]) set2.add(String(r[prod.filter2Field]).trim());
+      });
+
+      populateDropdown('filter-1', Array.from(set1).sort());
+      populateDropdown('filter-2', Array.from(set2).sort());
+    }
+
+    function populateDropdown(elemId, options) {
+      const select = document.getElementById(elemId);
+      select.innerHTML = `<option value="TODOS">TODOS</option>`;
+      options.forEach(opt => {
+        if (opt) select.innerHTML += `<option value="${opt}">${opt}</option>`;
+      });
+    }
+
+    function switchProduct(productKey) {
+      if (!PRODUCTS_CONFIG[productKey]) return;
+      currentProduct = productKey;
+
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.getElementById(`tab-${productKey}`).classList.add('active');
+
+      const prod = PRODUCTS_CONFIG[productKey];
+      const previewCard = document.getElementById('product-card-preview');
+      previewCard.className = `w-36 h-22 rounded-xl bg-gradient-to-tr ${prod.gradient} p-3 text-white flex flex-col justify-between shadow-md relative overflow-hidden transition-all duration-300`;
+      document.getElementById('card-type-label').innerText = prod.cardType;
+      document.getElementById('product-name-badge').innerText = prod.name;
+
+      updateFilterControls();
+      renderDashboard();
+    }
+
+    function applyFilters() {
+      renderDashboard();
+    }
+
+    function getFilteredData() {
+      const prod = PRODUCTS_CONFIG[currentProduct];
+      const val1 = document.getElementById('filter-1').value;
+      const val2 = document.getElementById('filter-2').value;
+
+      let dataset = currentProduct === 'minipagos' ? rawDataECC : rawDataTotal;
+
+      return dataset.filter(r => {
+        if (currentProduct === 'visa' && String(r.TIP_INF) !== '200') return false;
+        if (currentProduct === 'departamental' && String(r.TIP_INF) !== '210') return false;
+
+        if (val1 !== 'TODOS' && String(r[prod.filter1Field]).trim() !== val1) return false;
+        if (val2 !== 'TODOS' && String(r[prod.filter2Field]).trim() !== val2) return false;
+
+        return true;
+      });
+    }
+
+    function aggregateByCohort(dataRows) {
+      const cohortMap = {};
+
+      dataRows.forEach(r => {
+        const rawDate = new Date(r.COSECHA);
+        if (isNaN(rawDate.getTime())) return;
+
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const cohortKey = `${months[rawDate.getMonth()]} ${rawDate.getFullYear()}`;
+
+        if (!cohortMap[cohortKey]) {
+          cohortMap[cohortKey] = { rawDate: rawDate };
+        }
+
+        Object.keys(r).forEach(k => {
+          if (k !== 'COSECHA' && typeof r[k] === 'number') {
+            cohortMap[cohortKey][k] = (cohortMap[cohortKey][k] || 0) + r[k];
+          }
+        });
+      });
+
+      const sortedCohorts = Object.keys(cohortMap).sort((a, b) => cohortMap[a].rawDate - cohortMap[b].rawDate);
+      return { sortedCohorts, cohortMap };
+    }
+
+    function renderDashboard() {
+      const wrapper = document.getElementById('charts-wrapper');
+      wrapper.innerHTML = '';
+
+      Object.keys(chartInstances).forEach(key => {
+        if (!key.startsWith('seasonality_')) {
+          chartInstances[key].destroy();
+          delete chartInstances[key];
+        }
+      });
+
+      const filteredRows = getFilteredData();
+      const { sortedCohorts, cohortMap } = aggregateByCohort(filteredRows);
+      cohortLabels = sortedCohorts;
+
+      const prodConfig = PRODUCTS_CONFIG[currentProduct];
+
+      METRICS_DEFINITIONS.forEach(metric => {
+        const metricTitle = getMetricProperty(metric, 'title');
+        const ctaMoraCol = getMetricProperty(metric, 'ctaMoraCol');
+        const ctaTotCol = getMetricProperty(metric, 'ctaTotCol');
+        const sdoMoraCol = getMetricProperty(metric, 'sdoMoraCol');
+        const sdoTotCol = getMetricProperty(metric, 'sdoTotCol');
+        const ctaMoraAdjCol = getMetricProperty(metric, 'ctaMoraAdjCol');
+        const ctaTotAdjCol = getMetricProperty(metric, 'ctaTotAdjCol');
+        const sdoMoraAdjCol = getMetricProperty(metric, 'sdoMoraAdjCol');
+        const sdoTotAdjCol = getMetricProperty(metric, 'sdoTotAdjCol');
+
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-4 md:p-6 rounded-2xl card-shadow border border-gray-100';
+
+        const metricTargets = getMetricTargets(metric, currentProduct);
+        const dataObjAccounts = metricTargets.accounts;
+        const dataObjSaldos = metricTargets.saldos;
+
+        const accSeries = [];
+        const sdoSeries = [];
+        const sdoAdjSeries = [];
+
+        sortedCohorts.forEach(ch => {
+          const cData = cohortMap[ch];
+
+          const ctaTot = cData[ctaTotCol] || 0;
+          const ctaMora = cData[ctaMoraCol] || 0;
+          const accVal = ctaTot > 0 ? (ctaMora / ctaTot) * 100 : null;
+          accSeries.push(accVal !== null ? parseFloat(accVal.toFixed(2)) : null);
+
+          const sdoTot = cData[sdoTotCol] || 0;
+          const sdoMora = cData[sdoMoraCol] || 0;
+          const sdoVal = sdoTot > 0 ? (sdoMora / sdoTot) * 100 : null;
+          sdoSeries.push(sdoVal !== null ? parseFloat(sdoVal.toFixed(2)) : null);
+
+          const sdoTotAdj = cData[sdoTotAdjCol] || 0;
+          const sdoMoraAdj = cData[sdoMoraAdjCol] || 0;
+          const sdoAdjVal = sdoTotAdj > 0 ? (sdoMoraAdj / sdoTotAdj) * 100 : null;
+          sdoAdjSeries.push(sdoAdjVal !== null ? parseFloat(sdoAdjVal.toFixed(2)) : null);
+        });
+
+        const accLast = getValidLastValue(accSeries);
+        const sdoLast = currentProduct === 'departamental' ? getValidLastValue(sdoAdjSeries) : getValidLastValue(sdoSeries);
+
+        const accountBlock = createChartCardHtml(metric, 'accounts', accLast, dataObjAccounts, metricTitle);
+        const saldoBlock = createChartCardHtml(metric, 'saldos', sdoLast, dataObjSaldos, metricTitle);
+
+        rowDiv.appendChild(accountBlock);
+        rowDiv.appendChild(saldoBlock);
+        wrapper.appendChild(rowDiv);
+
+        initChartJs(`${metric.id}_accounts`, metric, 'accounts', accSeries, null, prodConfig, dataObjAccounts);
+        initChartJs(`${metric.id}_saldos`, metric, 'saldos', sdoSeries, sdoAdjSeries, prodConfig, dataObjSaldos);
+      });
+
+      renderSeasonalitySection(cohortMap);
+    }
+
+    function getValidLastValue(arr) {
+      for (let i = arr.length - 1; i >= 0; i--) {
+        if (arr[i] !== null && arr[i] !== undefined) return arr[i];
+      }
+      return 0;
+    }
+
+    function createChartCardHtml(metric, type, currentVal, dataObj, customTitle) {
+      const metricTitle = customTitle || getMetricProperty(metric, 'title');
+      const status = currentVal <= dataObj.target ? 'green' : (currentVal <= dataObj.targetMax ? 'yellow' : 'red');
+      const badgeStyle = status === 'green' ? 'bg-[#51cf66] text-gray-900 font-extrabold' : (status === 'yellow' ? 'bg-[#fcc419] text-gray-900 font-extrabold' : 'bg-[#ff6b6b] text-white font-extrabold');
+
+      const card = document.createElement('div');
+      card.className = 'relative flex flex-col justify-between h-[280px] w-full bg-white rounded-lg p-2';
+
+      const badge = document.createElement('div');
+      badge.className = `absolute top-1 right-2 px-3 py-1.5 rounded-lg text-center shadow-sm z-10 ${badgeStyle}`;
+      badge.innerHTML = `
+        <div class="text-[10px] uppercase font-bold tracking-tight opacity-90">${metricTitle}</div>
+        <div class="text-xl font-black leading-none mt-0.5">${currentVal}%</div>
+        <div class="text-[9px] font-bold opacity-80 mt-1 border-t border-black/15 pt-0.5 whitespace-nowrap">Target: ${dataObj.target}%</div>
+      `;
+
+      const canvasContainer = document.createElement('div');
+      canvasContainer.className = 'relative w-full h-full pt-4';
+      canvasContainer.innerHTML = `<canvas id="${metric.id}_${type}"></canvas>`;
+
+      card.appendChild(badge);
+      card.appendChild(canvasContainer);
+      return card;
+    }
+
+    function initChartJs(canvasId, metric, type, seriesDataPrimary, seriesDataSecondary, prodConfig, dataObj) {
+      const canvasElem = document.getElementById(canvasId);
+      if (!canvasElem) return;
+      const ctx = canvasElem.getContext('2d');
+      const datasets = [];
+      const metricTitle = getMetricProperty(metric, 'title');
+
+      if (type === 'accounts') {
+        datasets.push({
+          label: metricTitle,
+          data: seriesDataPrimary,
+          borderColor: prodConfig.lineColor,
+          borderWidth: 2,
+          tension: 0.2,
+          pointRadius: 0,
+          pointHoverRadius: 5,
+          fill: false
+        });
+      } else {
+        if (currentProduct === 'visa') {
+          datasets.push({
+            label: `${metricTitle} (Saldos Totales)`,
+            data: seriesDataPrimary,
+            borderColor: '#1e293b',
+            borderWidth: 2,
+            tension: 0.2,
+            pointRadius: 0,
+            pointHoverRadius: 5,
+            fill: false
+          });
+          datasets.push({
+            label: `${metricTitle} (Saldos Ajustados)`,
+            data: seriesDataSecondary,
+            borderColor: '#e53935',
+            borderWidth: 2,
+            borderDash: [5, 4],
+            tension: 0.2,
+            pointRadius: 0,
+            pointHoverRadius: 5,
+            fill: false
+          });
+        } else if (currentProduct === 'departamental') {
+          datasets.push({
+            label: `${metricTitle} (Ajustado)`,
+            data: seriesDataSecondary,
+            borderColor: prodConfig.lineColor,
+            borderWidth: 2,
+            tension: 0.2,
+            pointRadius: 0,
+            pointHoverRadius: 5,
+            fill: false
+          });
+        } else {
+          datasets.push({
+            label: metricTitle,
+            data: seriesDataPrimary,
+            borderColor: prodConfig.lineColor,
+            borderWidth: 2,
+            tension: 0.2,
+            pointRadius: 0,
+            pointHoverRadius: 5,
+            fill: false
+          });
+        }
+      }
+
+      let scaleConfig = { min: 0, max: 10, stepSize: 1 };
+      if (metric.scales && metric.scales[currentProduct] && metric.scales[currentProduct][type]) {
+        scaleConfig = metric.scales[currentProduct][type];
+      } else if (metric.scales && metric.scales.default && metric.scales.default[type]) {
+        scaleConfig = metric.scales.default[type];
+      }
+
+      const yScaleConfig = {
+        min: scaleConfig.min,
+        max: scaleConfig.max,
+        grid: { color: '#f1f5f9' },
+        ticks: {
+          stepSize: scaleConfig.stepSize,
+          callback: (v) => v + '%',
+          font: { size: 10, family: 'Montserrat' },
+          color: '#64748b'
+        }
+      };
+
+      const chart = new Chart(ctx, {
+        type: 'line',
+        data: { labels: cohortLabels, datasets: datasets },
+        plugins: [targetLinesPlugin],
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: {
+              display: true,
+              position: 'bottom',
+              labels: { boxWidth: 14, font: { size: 10, family: 'Montserrat', weight: '600' }, color: '#4b5563' }
+            },
+            tooltip: {
+              backgroundColor: '#0f172a',
+              titleColor: '#ffffff',
+              bodyColor: '#f1f5f9',
+              borderColor: '#334155',
+              borderWidth: 1,
+              cornerRadius: 8,
+              padding: 12,
+              titleFont: { size: 12, family: 'Montserrat', weight: 'bold' },
+              bodyFont: { size: 11, family: 'Montserrat' },
+              callbacks: {
+                title: (ctxArr) => ctxArr[0].label,
+                label: (ctx) => ` ■ ${ctx.dataset.label}: ${ctx.parsed.y !== null ? ctx.parsed.y + '%' : 'N/A'}`,
+                afterBody: () => [
+                  '',
+                  `Target Min: ${dataObj.targetMin}%`,
+                  `Target: ${dataObj.target}%`,
+                  `Target Max: ${dataObj.targetMax}%`
+                ]
+              }
+            },
+            customTarget: { target: dataObj.target, targetMin: dataObj.targetMin, targetMax: dataObj.targetMax }
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 9, family: 'Montserrat' }, color: '#333333', maxRotation: 45, minRotation: 45 } },
+            y: yScaleConfig
+          }
+        }
+      });
+
+      chartInstances[canvasId] = chart;
+    }
+
+    /* ESTACIONALIDAD */
+    function renderSeasonalitySection(cohortMap) {
+      renderYearChips();
+      renderSeasonalityCharts(cohortMap);
+    }
+
+    function renderYearChips() {
+      const container = document.getElementById('year-chips-container');
+      if (!container) return;
+      container.innerHTML = '';
+
+      AVAILABLE_YEARS.forEach(year => {
+        const isSelected = selectedYears.includes(year);
+        const color = YEAR_COLORS[year];
+
+        const btn = document.createElement('button');
+        btn.onclick = () => toggleYear(year);
+        btn.className = `year-chip px-3 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-2 cursor-pointer transition-all ${
+          isSelected ? 'border-purple-600 bg-purple-50 text-purple-900 shadow-sm' : 'border-gray-200 bg-white text-gray-400 hover:border-gray-300'
+        }`;
+
+        btn.innerHTML = `
+          <span class="w-2.5 h-2.5 rounded-full inline-block" style="background-color: ${isSelected ? color : '#cbd5e1'};"></span>
+          <span>${year}</span>
+          ${isSelected ? '<i class="fa-solid fa-check text-[10px] text-purple-600 ml-1"></i>' : ''}
+        `;
+
+        container.appendChild(btn);
+      });
+    }
+
+    function toggleYear(year) {
+      if (selectedYears.includes(year)) {
+        selectedYears = selectedYears.filter(y => y !== year);
+      } else {
+        selectedYears.push(year);
+        selectedYears.sort();
+      }
+      renderDashboard();
+    }
+
+    function selectAllYears(selectAll) {
+      selectedYears = selectAll ? [...AVAILABLE_YEARS] : [];
+      renderDashboard();
+    }
+
+    function onSeasonalityMetricChange(metricId) {
+      selectedSeasonalityMetric = metricId;
+      renderDashboard();
+    }
+
+    function renderSeasonalityCharts(cohortMap) {
+      const metricObj = METRICS_DEFINITIONS.find(m => m.id === selectedSeasonalityMetric) || METRICS_DEFINITIONS[0];
+      const metricTitle = getMetricProperty(metricObj, 'title');
+      const ctaMoraCol = getMetricProperty(metricObj, 'ctaMoraCol');
+      const ctaTotCol = getMetricProperty(metricObj, 'ctaTotCol');
+      const sdoMoraCol = getMetricProperty(metricObj, 'sdoMoraCol');
+      const sdoTotCol = getMetricProperty(metricObj, 'sdoTotCol');
+      const sdoMoraAdjCol = getMetricProperty(metricObj, 'sdoMoraAdjCol');
+      const sdoTotAdjCol = getMetricProperty(metricObj, 'sdoTotAdjCol');
+
+      const datasetsAccounts = [];
+      const datasetsSaldos = [];
+
+      selectedYears.forEach(year => {
+        const color = YEAR_COLORS[year];
+        const accData = [];
+        const salData = [];
+
+        for (let m = 0; m < 12; m++) {
+          const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          const key = `${months[m]} ${year}`;
+          const cData = cohortMap ? cohortMap[key] : null;
+
+          if (cData) {
+            const ctaTot = cData[ctaTotCol] || 0;
+            const ctaMora = cData[ctaMoraCol] || 0;
+            accData.push(ctaTot > 0 ? parseFloat(((ctaMora / ctaTot) * 100).toFixed(2)) : null);
+
+            const sdoTot = currentProduct === 'departamental' ? (cData[sdoTotAdjCol] || 0) : (cData[sdoTotCol] || 0);
+            const sdoMora = currentProduct === 'departamental' ? (cData[sdoMoraAdjCol] || 0) : (cData[sdoMoraCol] || 0);
+            salData.push(sdoTot > 0 ? parseFloat(((sdoMora / sdoTot) * 100).toFixed(2)) : null);
+          } else {
+            accData.push(null);
+            salData.push(null);
+          }
+        }
+
+        datasetsAccounts.push({ label: `${year}`, data: accData, borderColor: color, backgroundColor: color, borderWidth: 2, tension: 0.2, pointRadius: 2, spanGaps: false });
+        datasetsSaldos.push({ label: `${year}`, data: salData, borderColor: color, backgroundColor: color, borderWidth: 2, tension: 0.2, pointRadius: 2, spanGaps: false });
+      });
+
+      createOrUpdateSeasonalityChart('seasonality_chart_accounts', metricTitle, datasetsAccounts);
+      createOrUpdateSeasonalityChart('seasonality_chart_saldos', metricTitle, datasetsSaldos);
+    }
+
+    function createOrUpdateSeasonalityChart(canvasId, metricTitle, datasets) {
+      if (chartInstances[canvasId]) {
+        chartInstances[canvasId].destroy();
+        delete chartInstances[canvasId];
+      }
+
+      const canvasElem = document.getElementById(canvasId);
+      if (!canvasElem) return;
+      const ctx = canvasElem.getContext('2d');
+
+      chartInstances[canvasId] = new Chart(ctx, {
+        type: 'line',
+        data: { labels: MONTHS_12, datasets: datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: { display: true, position: 'bottom', labels: { boxWidth: 12, font: { size: 10, family: 'Montserrat', weight: '600' }, color: '#4b5563' } },
+            tooltip: {
+              backgroundColor: '#0f172a', titleColor: '#ffffff', bodyColor: '#f1f5f9', borderColor: '#334155', borderWidth: 1, cornerRadius: 8, padding: 10,
+              titleFont: { size: 11, family: 'Montserrat', weight: 'bold' },
+              callbacks: {
+                title: (ctx) => `Mes: ${ctx[0].label} (${metricTitle})`,
+                label: (ctx) => ` Año ${ctx.dataset.label}: ${ctx.parsed.y !== null ? ctx.parsed.y + '%' : 'N/A'}`
+              }
+            }
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 10, family: 'Montserrat', weight: '600' }, color: '#4b5563' } },
+            y: { min: 0, grid: { color: '#f3f4f6' }, ticks: { callback: (v) => v + '%', font: { size: 10, family: 'Montserrat' }, color: '#6b7280' } }
+          }
+        }
+      });
+    }
+
+    function generateMockBackendData() {
+      rawDataTotal = [];
+      rawDataECC = [];
+
+      for (let y = 2018; y <= 2026; y++) {
+        for (let m = 0; m < 12; m++) {
+          if (y === 2018 && m < 11) continue;
+          if (y === 2026 && m > 6) break;
+          const fecha = `${y}-${String(m+1).padStart(2,'0')}-01`;
+
+          let peakFactorAcc = (y === 2019 || (y === 2020 && m < 6)) ? 3.2 : 1.0;
+          let peakFactorSdo = (y === 2019 || (y === 2020 && m < 6)) ? 4.2 : 1.0;
+
+          ['TIENDA', 'DIGITAL', 'KIOSKO'].forEach(canal => {
+            ['HIT', 'NO_HIT'].forEach(hit => {
+              [200, 210].forEach(tip => {
+                const baseCta = 1000;
+                const baseSdo = 100000;
+                
+                const accRate = (0.014 + Math.random() * 0.006) * peakFactorAcc;
+                const sdoRate = (0.024 + Math.random() * 0.012) * peakFactorSdo;
+
+                rawDataTotal.push({
+                  COSECHA: fecha, CANAL2: canal, BR_HIT_DES: hit, TIP_INF: tip,
+                  CTA_TOT_2M: baseCta, SDO_TOT_2M: baseSdo, CTA_ENTRY_2M: Math.floor(baseCta * accRate), SDO_ENTRY_2M: baseSdo * sdoRate,
+                  CTA_TOT_2M_ADJ: baseCta, SDO_TOT_2M_ADJ: baseSdo, CTA_ENTRY_2M_ADJ: Math.floor(baseCta * accRate * 0.95), SDO_ENTRY_2M_ADJ: baseSdo * sdoRate * 0.95,
+                  CTA_TOT_3M: baseCta, SDO_TOT_3M: baseSdo, CTA_30_3M: Math.floor(baseCta * 0.01), SDO_30_3M: baseSdo * 0.02,
+                  CTA_TOT_3M_ADJ: baseCta, SDO_TOT_3M_ADJ: baseSdo, CTA_30_3M_ADJ: Math.floor(baseCta * 0.009), SDO_30_3M_ADJ: baseSdo * 0.018,
+                  CTA_TOT_6M: baseCta, SDO_TOT_6M: baseSdo, CTA_30_6M: Math.floor(baseCta * 0.02), SDO_30_6M: baseSdo * 0.05,
+                  CTA_TOT_6M_ADJ: baseCta, SDO_TOT_6M_ADJ: baseSdo, CTA_30_6M_ADJ: Math.floor(baseCta * 0.019), SDO_30_6M_ADJ: baseSdo * 0.048,
+                  CTA_TOT_9M: baseCta, SDO_TOT_9M: baseSdo, CTA_90_9M: Math.floor(baseCta * 0.02), SDO_90_9M: baseSdo * 0.05,
+                  CTA_TOT_9M_ADJ: baseCta, SDO_TOT_9M_ADJ: baseSdo, CTA_90_9M_ADJ: Math.floor(baseCta * 0.019), SDO_90_9M_ADJ: baseSdo * 0.048,
+                  CTA_TOT_12M: baseCta, SDO_TOT_12M: baseSdo, CTA_90_12M: Math.floor(baseCta * 0.025), SDO_90_12M: baseSdo * 0.08,
+                  CTA_TOT_12M_ADJ: baseCta, SDO_TOT_12M_ADJ: baseSdo, CTA_90_12M_ADJ: Math.floor(baseCta * 0.024), SDO_90_12M_ADJ: baseSdo * 0.078
+                });
+              });
+            });
+          });
+
+          ['Ordinario', 'Recompra', 'Downsell FICO'].forEach(tramite => {
+            ['HIT', 'NOHIT', 'THIN FILE'].forEach(seg => {
+              const baseCta = 500;
+              const baseSdo = 50000;
+              rawDataECC.push({
+                COSECHA: fecha, BR_TIPO_TRAMITE: tramite, SEGMENTO_BC: seg,
+                CTA_TOT_2M: baseCta, SDO_TOT_2M: baseSdo, CTA_ENTRY_2M: Math.floor(baseCta * 0.075), SDO_ENTRY_2M: baseSdo * 0.191,
+                CTA_TOT_3M: baseCta, SDO_TOT_3M: baseSdo, CTA_30_3M: Math.floor(baseCta * 0.052), SDO_30_3M: baseSdo * 0.143,
+                CTA_TOT_6M: baseCta, SDO_TOT_6M: baseSdo, CTA_30_6M: Math.floor(baseCta * 0.087), SDO_30_6M: baseSdo * 0.224, CTA_60_6M: Math.floor(baseCta * 0.087), SDO_60_6M: baseSdo * 0.224,
+                CTA_TOT_9M: baseCta, SDO_TOT_9M: baseSdo, CTA_90_9M: Math.floor(baseCta * 0.111), SDO_90_9M: baseSdo * 0.311,
+                CTA_TOT_12M: baseCta, SDO_TOT_12M: baseSdo, CTA_90_12M: Math.floor(baseCta * 0.115), SDO_90_12M: baseSdo * 0.325
+              });
+            });
+          });
+
+        }
+      }
+    }
+
+    window.onload = function() {
+      fetchBackendData();
+    };
+  </script>
+</body>
+</html>
