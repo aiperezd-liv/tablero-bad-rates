@@ -2,15 +2,13 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Bad Rates Dashboard - Riesgos Negocios Financieros</title>
   
   <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- FontAwesome Icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
   <!-- Google Font: Montserrat -->
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
@@ -31,6 +29,7 @@
   </script>
 
   <style>
+    .ic{width:1em;height:1em;display:inline-block;vertical-align:-0.125em;flex-shrink:0}
     body {
       background-color: #f5f6f8;
       font-family: 'Montserrat', sans-serif;
@@ -46,6 +45,12 @@
       font-weight: 700;
       box-shadow: 0 2px 8px rgba(0,0,0,0.06);
     }
+    .main-tab.active {
+      background-color: #7b1fa2;
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(123,31,162,0.30);
+    }
+    .main-tab:not(.active):hover { color: #7b1fa2; }
     .dropdown-shadow {
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     }
@@ -109,17 +114,26 @@
       </div>
     </div>
 
-    <!-- 2. Product Tabs -->
+    <!-- 2a. Main Section Tabs -->
+    <div class="bg-white rounded-xl p-2.5 shadow-sm flex items-center justify-center border border-gray-100">
+      <nav class="flex space-x-2 bg-purple-50 p-1 rounded-lg">
+        <button onclick="switchSection('totales')" id="main-tab-totales" class="main-tab active px-7 py-2 rounded-md text-sm font-bold uppercase tracking-wide text-gray-500 transition-all">Totales</button>
+        <button onclick="switchSection('segmento')" id="main-tab-segmento" class="main-tab px-7 py-2 rounded-md text-sm font-bold uppercase tracking-wide text-gray-500 transition-all">Segmento</button>
+        <button onclick="switchSection('modelos')" id="main-tab-modelos" class="main-tab px-7 py-2 rounded-md text-sm font-bold uppercase tracking-wide text-gray-500 transition-all">Modelos</button>
+      </nav>
+    </div>
+
+    <!-- 2. Product Tabs (sub-tabs) -->
     <div class="bg-white rounded-xl p-2.5 shadow-sm flex items-center justify-center border border-gray-100">
       <nav class="flex space-x-2 bg-gray-100 p-1 rounded-lg">
         <button onclick="switchProduct('visa')" id="tab-visa" class="tab-btn active px-5 py-2 rounded-md text-sm font-semibold text-gray-600 transition-all flex items-center gap-2">
-          <i class="fa-brands fa-cc-visa text-slate-900"></i> Visa
+          <svg class="ic text-slate-900" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M6 15l2-6M10 15l2-6M14 11h4M15 9h3"/></svg> Visa
         </button>
         <button onclick="switchProduct('departamental')" id="tab-departamental" class="tab-btn px-5 py-2 rounded-md text-sm font-semibold text-gray-600 transition-all flex items-center gap-2">
-          <i class="fa-solid fa-credit-card text-purple-600"></i> Departamental
+          <svg class="ic text-purple-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg> Departamental
         </button>
         <button onclick="switchProduct('minipagos')" id="tab-minipagos" class="tab-btn px-5 py-2 rounded-md text-sm font-semibold text-gray-600 transition-all flex items-center gap-2">
-          <i class="fa-solid fa-hand-holding-dollar text-emerald-600"></i> Minipagos
+          <svg class="ic text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v8M14.5 5.5h-4a1.5 1.5 0 0 0 0 3h3a1.5 1.5 0 0 1 0 3h-4"/><path d="M3 17l4-1 5 1.5 6-2a1.5 1.5 0 0 1 1 2.8L12 21H3z"/></svg> Minipagos
         </button>
       </nav>
     </div>
@@ -143,28 +157,30 @@
       </div>
     </div>
 
+    <!-- ===== VISTA: GRÁFICAS (Totales y Segmento) ===== -->
+    <div id="view-charts" class="flex flex-col gap-6">
     <!-- Column Headers -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
       <div class="text-center font-bold text-gray-600 text-xl tracking-wide flex items-center justify-center gap-2">
-        <i class="fa-solid fa-users text-purple-600 text-base"></i> # Cuentas
+        <svg class="ic text-purple-600 text-base" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.5 3-6 6.5-6s6.5 2.5 6.5 6"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14c2.5 0 4.5 2 4.5 5"/></svg> # Cuentas
       </div>
       <div class="text-center font-bold text-gray-600 text-xl tracking-wide flex items-center justify-center gap-2">
-        <i class="fa-solid fa-sack-dollar text-emerald-600 text-base"></i> $ Saldos
+        <svg class="ic text-emerald-600 text-base" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6l-1.5 3h-3z"/><path d="M10 6C5 9 4 14 5 17c1 3 4 4 7 4s6-1 7-4c1-3 0-8-5-11"/><path d="M12 10v7M14 11.5h-3a1.3 1.3 0 0 0 0 2.6h2a1.3 1.3 0 0 1 0 2.6h-3"/></svg> $ Saldos
       </div>
     </div>
 
     <!-- 4. Main Charts Grid -->
-    <div id="charts-wrapper" class="flex flex-col gap-8">
+    <div id="charts-wrapper" class="flex flex-col gap-8 mb-6">
       <!-- Injected via JS -->
     </div>
 
     <!-- 5. ESTACIONALIDAD SECTION -->
-    <div class="bg-white rounded-2xl p-5 md:p-6 card-shadow mt-6 mb-12 flex flex-col gap-6 border border-gray-100">
+    <div id="seasonality-section" class="bg-white rounded-2xl p-5 md:p-6 card-shadow mt-6 mb-12 flex flex-col gap-6 border border-gray-100">
       
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-4">
         <div class="flex items-center gap-2.5">
           <div class="p-2 bg-purple-100 text-purple-700 rounded-lg">
-            <i class="fa-solid fa-chart-line text-lg"></i>
+            <svg class="ic text-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg>
           </div>
           <div>
             <h2 class="text-xl font-extrabold text-gray-800 tracking-tight uppercase">ESTACIONALIDAD</h2>
@@ -173,6 +189,7 @@
         </div>
 
         <div class="flex items-center gap-2">
+          <button id="seasonality-fraud-btn" onclick="toggleSeasonalityFraud()" class="hidden px-3 py-2 rounded-lg border text-xs font-bold whitespace-nowrap transition-all cursor-pointer border-gray-200 bg-gray-50 text-purple-900 hover:border-purple-400"></button>
           <label for="seasonality-metric-select" class="text-xs font-bold text-gray-500 uppercase whitespace-nowrap">Periodo Mora:</label>
           <select id="seasonality-metric-select" onchange="onSeasonalityMetricChange(this.value)" class="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs font-bold text-purple-900 focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer">
             <option value="entry_2mob">Entry @ 2MoB</option>
@@ -202,7 +219,7 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
         <div class="flex flex-col gap-2">
           <h3 class="text-sm font-bold text-gray-600 flex items-center gap-1.5">
-            <i class="fa-solid fa-users text-purple-600 text-xs"></i> # Cuentas - Estacionalidad
+            <svg class="ic text-purple-600 text-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.5 3-6 6.5-6s6.5 2.5 6.5 6"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14c2.5 0 4.5 2 4.5 5"/></svg> # Cuentas - Estacionalidad
           </h3>
           <div class="relative h-[300px] w-full bg-gray-50/50 rounded-xl p-3 border border-gray-100">
             <canvas id="seasonality_chart_accounts"></canvas>
@@ -211,7 +228,7 @@
 
         <div class="flex flex-col gap-2">
           <h3 class="text-sm font-bold text-gray-600 flex items-center gap-1.5">
-            <i class="fa-solid fa-sack-dollar text-emerald-600 text-xs"></i> $ Saldos - Estacionalidad
+            <svg class="ic text-emerald-600 text-xs" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3h6l-1.5 3h-3z"/><path d="M10 6C5 9 4 14 5 17c1 3 4 4 7 4s6-1 7-4c1-3 0-8-5-11"/><path d="M12 10v7M14 11.5h-3a1.3 1.3 0 0 0 0 2.6h2a1.3 1.3 0 0 1 0 2.6h-3"/></svg> $ Saldos - Estacionalidad
           </h3>
           <div class="relative h-[300px] w-full bg-gray-50/50 rounded-xl p-3 border border-gray-100">
             <canvas id="seasonality_chart_saldos"></canvas>
@@ -219,6 +236,14 @@
         </div>
       </div>
 
+    </div>
+
+    </div>
+    <!-- ===== VISTA: SEGMENTO / MODELOS (placeholder) ===== -->
+    <div id="view-placeholder" class="hidden bg-white rounded-2xl card-shadow border border-gray-100 py-24 px-6 text-center mb-12">
+      <div class="text-xs font-bold uppercase tracking-widest text-purple-400 mb-2" id="placeholder-section">Segmento</div>
+      <h2 class="text-2xl font-extrabold text-gray-700 mb-1" id="placeholder-title">Segmento · Visa</h2>
+      <p class="text-sm text-gray-400 font-medium">Próximamente: esta vista se construirá en la siguiente etapa.</p>
     </div>
 
   </main>
@@ -235,7 +260,8 @@
         filter2Label: 'BR_HIT_DES',
         filter2Field: 'BR_HIT_DES',
         lineColor: '#7b1fa2',
-        modelUpdateCohort: 'Nov 2025'
+        modelUpdateCohort: 'Nov 2025',
+        segments: ['PURO', 'X-SELL', 'DOBLE']
       },
       departamental: {
         name: 'suburbia departamental',
@@ -246,7 +272,8 @@
         filter2Label: 'BR_HIT_DES',
         filter2Field: 'BR_HIT_DES',
         lineColor: '#92278f',
-        modelUpdateCohort: 'Jul 2024'
+        modelUpdateCohort: 'Jul 2024',
+        segments: ['THIN FILE', 'NOHIT', 'HIT', 'X-SELL']
       },
       minipagos: {
         name: 'minipagos',
@@ -261,10 +288,49 @@
       }
     };
 
+    /* SEGMENTOS (pestaña Segmento: una línea por segmento) */
+    // Columna de la hoja Ext_Total_Adj que define el segmento (mismo campo que el filtro BR_HIT_DES).
+    const SEGMENT_FIELD = 'BR_HIT_DES';
+    // Columna de la hoja Ext_Total_Adj que define el modelo / módulo de score.
+    const MODEL_FIELD = 'BR_MODULO_SCORE_DES';
+    const MODEL_COLORS = {
+      'PURO 2020': '#5e35b1', 'PURO 2025': '#03a9f4',
+      'DOBLE 2020': '#616161', 'DOBLE 2023': '#f5a623', 'DOBLE 2025': '#7cb342',
+      'NO HIT 2018': '#00acc1', 'NO HIT 2020': '#5e35b1', 'NO HIT 2024': '#e91e8c',
+      'HIT 2018': '#80deea', 'HIT 2020': '#b39ddb', 'HIT 2024': '#f48fb1',
+      'QUASH': '#f97316'
+    };
+    const FALLBACK_COLORS = ['#e11d48', '#0d9488', '#a16207', '#4f46e5', '#be185d', '#65a30d', '#0369a1'];
+    const SEGMENT_COLORS = {
+      'PURO': '#f97316', 'X-SELL': '#7cb342', 'DOBLE': '#0ea5e9',
+      'THIN FILE': '#1e88e5', 'NOHIT': '#e91e8c', 'HIT': '#5e35b1'
+    };
+
+    /* ESCALAS DE EJE Y PARA SEGMENTO Y MODELOS (Totales usa las de cada métrica/producto) */
+    const SECTION_SCALES = {
+      segmento: {
+        accounts: { min: 0, max: 10, stepSize: 2.5 },
+        saldos:   { min: 0, max: 20, stepSize: 5 }
+      },
+      modelos: {
+        accounts: { min: 0, max: 20, stepSize: 5 },
+        saldos:   { min: 0, max: 20, stepSize: 5 }
+      }
+    };
+
+    // En la pestaña Segmento el segundo filtro es ZONA (en lugar de BR_HIT_DES, que es la variable de las líneas).
+    const SEGMENT_FILTER2 = { label: 'ZONA', field: 'ZONA' };
+
+    function getFilter2Config(prod) {
+      if (currentSection === 'segmento' && prod.filter2Field === SEGMENT_FIELD) return SEGMENT_FILTER2;
+      return { label: prod.filter2Label, field: prod.filter2Field };
+    }
+
     /* METRIC DEFINITIONS WITH PRODUCT SPECIFIC TARGETS AND SCALES */
     const METRICS_DEFINITIONS = [
       {
         id: 'entry_2mob',
+        matMonths: 2, // meses que debe madurar la cosecha antes de mostrarse
         title: { default: 'Entry @ 2MoB', minipagos: 'Entry @ 2MoB' },
         ctaMoraCol: { default: 'CTA_ENTRY_2M', minipagos: 'CTA_ENTRY_2M' },
         ctaTotCol: 'CTA_TOT_2M',
@@ -292,8 +358,8 @@
         },
         targets: {
           visa: {
-            accounts: { targetMin: 1.08, target: 1.35, targetMax: 1.69 },
-            saldos:   { targetMin: 2.23, target: 3.09, targetMax: 3.84 }
+            accounts: { targetMin: 0.40, target: 1.60, targetMax: 2.70 },
+            saldos:   { targetMin: 1.19, target: 2.57, targetMax: 3.95 }
           },
           departamental: {
             accounts: { targetMin: 1.46, target: 1.95, targetMax: 2.53 },
@@ -311,6 +377,7 @@
       },
       {
         id: '30_3mob',
+        matMonths: 3, // meses que debe madurar la cosecha antes de mostrarse
         title: { default: '30+ @ 3MoB', minipagos: '30+ @ 3MoB' },
         ctaMoraCol: { default: 'CTA_30_3M', minipagos: 'CTA_30_3M' },
         ctaTotCol: 'CTA_TOT_3M',
@@ -338,8 +405,8 @@
         },
         targets: {
           visa: {
-            accounts: { targetMin: 0.47, target: 0.63, targetMax: 0.78 },
-            saldos:   { targetMin: 1.45, target: 2.01, targetMax: 2.57 }
+            accounts: { targetMin: 0, target: 0.80, targetMax: 1.70 },
+            saldos:   { targetMin: 0.26, target: 1.48, targetMax: 2.70 }
           },
           departamental: {
             accounts: { targetMin: 0.75, target: 1.00, targetMax: 1.30 },
@@ -357,6 +424,7 @@
       },
       {
         id: '30_6mob',
+        matMonths: 6, // meses que debe madurar la cosecha antes de mostrarse
         title: { default: '30+ @ 6MoB', minipagos: '60+ @ 6MoB' },
         ctaMoraCol: { default: 'CTA_30_6M', minipagos: 'CTA_60_6M' },
         ctaTotCol: 'CTA_TOT_6M',
@@ -384,8 +452,8 @@
         },
         targets: {
           visa: {
-            accounts: { targetMin: 1.65, target: 2.01, targetMax: 2.37 },
-            saldos:   { targetMin: 4.83, target: 5.82, targetMax: 6.82 }
+            accounts: { targetMin: 0.10, target: 2.60, targetMax: 5 },
+            saldos:   { targetMin: 2.01, target: 5.06, targetMax: 8.11 }
           },
           departamental: {
             accounts: { targetMin: 2.43, target: 3.24, targetMax: 4.21 },
@@ -403,6 +471,7 @@
       },
       {
         id: '90_9mob',
+        matMonths: 9, // meses que debe madurar la cosecha antes de mostrarse
         title: { default: '90+ @ 9MoB', minipagos: '90+ @ 9MoB' },
         ctaMoraCol: { default: 'CTA_90_9M', minipagos: 'CTA_90_9M' },
         ctaTotCol: 'CTA_TOT_9M',
@@ -430,8 +499,8 @@
         },
         targets: {
           visa: {
-            accounts: { targetMin: 1.57, target: 1.90, targetMax: 2.22 },
-            saldos:   { targetMin: 4.84, target: 5.80, targetMax: 6.76 }
+            accounts: { targetMin: 0.1, target: 1.90, targetMax: 3.80 },
+            saldos:   { targetMin: 2.86, target: 5.44, targetMax: 8.02 }
           },
           departamental: {
             accounts: { targetMin: 2.18, target: 2.91, targetMax: 3.78 },
@@ -449,6 +518,7 @@
       },
       {
         id: '90_12mob',
+        matMonths: 12, // meses que debe madurar la cosecha antes de mostrarse
         title: { default: '90+ @ 12MoB', minipagos: '90+ @ 12MoB' },
         ctaMoraCol: { default: 'CTA_90_12M', minipagos: 'CTA_90_12M' },
         ctaTotCol: 'CTA_TOT_12M',
@@ -476,8 +546,8 @@
         },
         targets: {
           visa: {
-            accounts: { targetMin: 2.10, target: 2.50, targetMax: 2.90 },
-            saldos:   { targetMin: 6.50, target: 7.80, targetMax: 9.10 }
+            accounts: { targetMin: 1.30, target: 3.40, targetMax: 5.50 },
+            saldos:   { targetMin: 2.81, target: 5.45, targetMax: 8.09 }
           },
           departamental: {
             accounts: { targetMin: 2.80, target: 3.60, targetMax: 4.50 },
@@ -513,6 +583,62 @@
       };
     }
 
+    /* MADUREZ DE COSECHAS
+       Una cosecha se muestra solo si ya tuvo tiempo de madurar en la métrica:
+       último mes cerrado - N meses (ej. hoy nov-2026: Entry@2MoB -> ago-2026, 30+@3MoB -> jul-2026).
+       Se calcula con la fecha del navegador, así se recorre sola cada mes. */
+    function isCohortMature(rawDate, metric) {
+      if (!rawDate || !metric || !metric.matMonths) return true;
+      const now = new Date();
+      const maxIdx = now.getFullYear() * 12 + now.getMonth() - 1 - metric.matMonths;
+      const cohortIdx = rawDate.getUTCFullYear() * 12 + rawDate.getUTCMonth();
+      return cohortIdx <= maxIdx;
+    }
+
+    /* EJE X FIJO POR MÉTRICA
+       Las cosechas del eje se construyen con el dataset completo del producto (sin filtros de canal/segmento)
+       y se cortan en la última cosecha madura. Así, al aplicar cualquier filtro, el último mes mostrado
+       es siempre el mismo; los meses sin datos para ese filtro quedan en blanco (null). */
+    const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    function cohortIndexOf(cosecha) {
+      let y, m;
+      if (typeof cosecha === 'string') {
+        const parts = cosecha.split(/[-T/]/);
+        if (parts.length < 2) return null;
+        y = parseInt(parts[0], 10); m = parseInt(parts[1], 10) - 1;
+      } else {
+        const d = new Date(cosecha);
+        if (isNaN(d.getTime())) return null;
+        y = d.getUTCFullYear(); m = d.getUTCMonth();
+      }
+      return (isNaN(y) || isNaN(m)) ? null : y * 12 + m;
+    }
+    function buildMetricCohorts(metric) {
+      const base = currentProduct === 'minipagos' ? rawDataECC : rawDataTotal.filter(r => {
+        if (currentProduct === 'visa') return String(r.TIP_INF) === '200';
+        if (currentProduct === 'departamental') return String(r.TIP_INF) === '210';
+        return true;
+      });
+      let minIdx = Infinity, maxIdx = -Infinity;
+      base.forEach(r => {
+        if (!r.COSECHA) return;
+        const idx = cohortIndexOf(r.COSECHA);
+        if (idx === null) return;
+        if (idx < minIdx) minIdx = idx;
+        if (idx > maxIdx) maxIdx = idx;
+      });
+      if (minIdx === Infinity) return [];
+      if (metric && metric.matMonths) {
+        const now = new Date();
+        maxIdx = Math.min(maxIdx, now.getFullYear() * 12 + now.getMonth() - 1 - metric.matMonths);
+      }
+      const labels = [];
+      for (let i = minIdx; i <= maxIdx; i++) {
+        labels.push(`${MONTH_ABBR[i % 12]} ${Math.floor(i / 12)}`);
+      }
+      return labels;
+    }
+
     const AVAILABLE_YEARS = [2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026];
     const YEAR_COLORS = {
       2019: '#64748b', 2020: '#ef4444', 2021: '#f59e0b', 2022: '#10b981',
@@ -524,8 +650,10 @@
     let rawDataTotal = [];
     let rawDataECC = [];
     let currentProduct = 'visa';
+    let currentSection = 'totales';
     let selectedYears = [2021, 2022, 2023, 2024, 2025, 2026];
     let selectedSeasonalityMetric = 'entry_2mob';
+    let seasonalityNoFraud = false; // true = vista sin fraude (solo Visa)
     let chartInstances = {};
     let cohortLabels = [];
 
@@ -605,7 +733,7 @@
       
       toast.className = `${bgColor} text-white px-4 py-3 rounded-lg shadow-xl text-xs font-semibold flex items-center gap-2 pointer-events-auto transition-all duration-300 transform translate-y-2 opacity-0`;
       toast.innerHTML = `
-        <i class="fa-solid ${isError ? 'fa-circle-exclamation' : 'fa-circle-info'} text-sm"></i>
+        ${isError ? '<svg class="ic text-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>' : '<svg class="ic text-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg>'}
         <span>${message}</span>
       `;
 
@@ -669,7 +797,8 @@
     function updateFilterControls() {
       const prod = PRODUCTS_CONFIG[currentProduct];
       document.getElementById('label-filter-1').innerText = prod.filter1Label;
-      document.getElementById('label-filter-2').innerText = prod.filter2Label;
+      const f2 = getFilter2Config(prod);
+      document.getElementById('label-filter-2').innerText = f2.label;
 
       // Update seasonality metric select dropdown options and visibility dynamically
       const seasonalitySelect = document.getElementById('seasonality-metric-select');
@@ -706,7 +835,7 @@
 
       dataset.forEach(r => {
         if (r[prod.filter1Field]) set1.add(String(r[prod.filter1Field]).trim());
-        if (r[prod.filter2Field]) set2.add(String(r[prod.filter2Field]).trim());
+        if (r[f2.field]) set2.add(String(r[f2.field]).trim());
       });
 
       populateDropdown('filter-1', Array.from(set1).sort());
@@ -736,6 +865,44 @@
 
       updateFilterControls();
       renderDashboard();
+      updatePlaceholder();
+    }
+
+    const SECTION_LABELS = { totales: 'Totales', segmento: 'Segmento', modelos: 'Modelos' };
+
+    function updatePlaceholder() {
+      document.getElementById('placeholder-section').innerText = SECTION_LABELS[currentSection];
+      document.getElementById('placeholder-title').innerText =
+        SECTION_LABELS[currentSection] + ' · ' + { visa: 'Visa', departamental: 'Departamental', minipagos: 'Minipagos' }[currentProduct];
+    }
+
+    function switchSection(section) {
+      if (!SECTION_LABELS[section]) return;
+      currentSection = section;
+      document.querySelectorAll('.main-tab').forEach(b => b.classList.remove('active'));
+      document.getElementById(`main-tab-${section}`).classList.add('active');
+
+      // Segmento solo maneja Visa y Departamental
+      const minipagosTab = document.getElementById('tab-minipagos');
+      const noMinipagos = section === 'segmento' || section === 'modelos';
+      minipagosTab.classList.toggle('hidden', noMinipagos);
+      if (noMinipagos && currentProduct === 'minipagos') {
+        currentProduct = 'visa';
+        switchProduct('visa');
+      }
+
+      // El filtro 2 cambia según la pestaña (ZONA en Segmento): se refrescan las opciones y se conserva el filtro 1
+      const prevFilter1 = document.getElementById('filter-1').value;
+      updateFilterControls();
+      const f1 = document.getElementById('filter-1');
+      if ([...f1.options].some(o => o.value === prevFilter1)) f1.value = prevFilter1;
+
+      const showCharts = true; // Totales, Segmento y Modelos comparten el área de gráficas
+      document.getElementById('view-charts').classList.toggle('hidden', !showCharts);
+      document.getElementById('seasonality-section').classList.toggle('hidden', section !== 'totales');
+      document.getElementById('view-placeholder').classList.toggle('hidden', showCharts);
+      updatePlaceholder();
+      if (showCharts) renderDashboard();
     }
 
     function applyFilters() {
@@ -754,7 +921,7 @@
         if (currentProduct === 'departamental' && String(r.TIP_INF) !== '210') return false;
 
         if (val1 !== 'TODOS' && String(r[prod.filter1Field]).trim() !== val1) return false;
-        if (val2 !== 'TODOS' && String(r[prod.filter2Field]).trim() !== val2) return false;
+        if (val2 !== 'TODOS' && String(r[getFilter2Config(prod).field]).trim() !== val2) return false;
 
         return true;
       });
@@ -810,6 +977,7 @@
     }
 
     function renderDashboard() {
+      if (currentSection === 'segmento' || currentSection === 'modelos') { renderMultiLineDashboard(currentSection); return; }
       const wrapper = document.getElementById('charts-wrapper');
       wrapper.innerHTML = '';
 
@@ -848,16 +1016,25 @@
         const dataObjSaldos = metricTargets.saldos;
 
         const accSeries = [];
+        const accAdjSeries = [];
         const sdoSeries = [];
         const sdoAdjSeries = [];
 
-        sortedCohorts.forEach(ch => {
-          const cData = cohortMap[ch];
+        // Solo cosechas maduras para esta métrica
+        const metricCohorts = buildMetricCohorts(metric);
+
+        metricCohorts.forEach(ch => {
+          const cData = cohortMap[ch] || {};
 
           const ctaTot = cData[ctaTotCol] || 0;
           const ctaMora = cData[ctaMoraCol] || 0;
           const accVal = ctaTot > 0 ? (ctaMora / ctaTot) * 100 : null;
           accSeries.push(accVal !== null ? parseFloat(accVal.toFixed(2)) : null);
+
+          const ctaTotAdj = cData[ctaTotAdjCol] || 0;
+          const ctaMoraAdj = cData[ctaMoraAdjCol] || 0;
+          const accAdjVal = ctaTotAdj > 0 ? (ctaMoraAdj / ctaTotAdj) * 100 : null;
+          accAdjSeries.push(accAdjVal !== null ? parseFloat(accAdjVal.toFixed(2)) : null);
 
           const sdoTot = cData[sdoTotCol] || 0;
           const sdoMora = cData[sdoMoraCol] || 0;
@@ -873,18 +1050,151 @@
         const accLast = getValidLastValue(accSeries);
         const sdoLast = currentProduct === 'departamental' ? getValidLastValue(sdoAdjSeries) : getValidLastValue(sdoSeries);
 
-        const accountBlock = createChartCardHtml(metric, 'accounts', accLast, dataObjAccounts, metricTitle);
-        const saldoBlock = createChartCardHtml(metric, 'saldos', sdoLast, dataObjSaldos, metricTitle);
+        // Visa: segundo semáforo con cuentas ajustadas (sin fraudes), mismos targets
+        const accAdjLast = currentProduct === 'visa' ? getValidLastValue(accAdjSeries) : null;
+        const accountBlock = createChartCardHtml(metric, 'accounts', accLast, dataObjAccounts, metricTitle, accAdjLast);
+        // Visa: segundo semáforo con saldos ajustados (sin fraudes), mismos targets
+        const sdoAdjLast = currentProduct === 'visa' ? getValidLastValue(sdoAdjSeries) : null;
+        const saldoBlock = createChartCardHtml(metric, 'saldos', sdoLast, dataObjSaldos, metricTitle, sdoAdjLast);
 
         rowDiv.appendChild(accountBlock);
         rowDiv.appendChild(saldoBlock);
         wrapper.appendChild(rowDiv);
 
-        initChartJs(`${metric.id}_accounts`, metric, 'accounts', accSeries, null, prodConfig, dataObjAccounts);
-        initChartJs(`${metric.id}_saldos`, metric, 'saldos', sdoSeries, sdoAdjSeries, prodConfig, dataObjSaldos);
+        initChartJs(`${metric.id}_accounts`, metric, 'accounts', accSeries, accAdjSeries, prodConfig, dataObjAccounts, undefined, metricCohorts);
+        initChartJs(`${metric.id}_saldos`, metric, 'saldos', sdoSeries, sdoAdjSeries, prodConfig, dataObjSaldos, undefined, metricCohorts);
       });
 
       renderSeasonalitySection(cohortMap);
+    }
+
+
+    /* Helpers de agrupación */
+    const groupKey = v => String(v ?? '').trim().replace(/\s+/g, ' ').toUpperCase();
+    const colorKey = v => String(v ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    function colorFromMap(map, label) {
+      const k = colorKey(label);
+      const hit = Object.keys(map).find(name => colorKey(name) === k);
+      return hit ? map[hit] : null;
+    }
+
+    /* ===== SEGMENTO / MODELOS: mismas gráficas, una línea por grupo ===== */
+    function renderSegmentDashboard() { renderMultiLineDashboard('segmento'); }
+
+    function renderMultiLineDashboard(mode) {
+      const wrapper = document.getElementById('charts-wrapper');
+      wrapper.innerHTML = '';
+      Object.keys(chartInstances).forEach(key => {
+        if (!key.startsWith('seasonality_')) {
+          chartInstances[key].destroy();
+          delete chartInstances[key];
+        }
+      });
+
+      const prodConfig = PRODUCTS_CONFIG[currentProduct];
+      const isModelos = mode === 'modelos';
+      const GROUP_FIELD = isModelos ? MODEL_FIELD : SEGMENT_FIELD;
+      const filteredRows = getFilteredData();
+      const { sortedCohorts } = aggregateByCohort(filteredRows);
+      cohortLabels = sortedCohorts;
+
+      // Los grupos (segmentos o modelos) se detectan automáticamente a partir de los datos filtrados.
+      const keyOf = r => groupKey(r[GROUP_FIELD]);
+      const labelByKey = {};
+      filteredRows.forEach(r => {
+        const k = keyOf(r);
+        if (k && !labelByKey[k]) labelByKey[k] = String(r[GROUP_FIELD]).trim();
+      });
+      const preferredOrder = isModelos ? [] : (prodConfig.segments || []).map(groupKey);
+      const segments = Object.keys(labelByKey)
+        .sort((a, b) => {
+          const ia = preferredOrder.indexOf(a), ib = preferredOrder.indexOf(b);
+          if (ia !== -1 || ib !== -1) return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+          return labelByKey[a].localeCompare(labelByKey[b], 'es', { numeric: true });
+        })
+        .map(k => labelByKey[k]);
+      const colorOf = (g, idx) => colorFromMap(isModelos ? MODEL_COLORS : SEGMENT_COLORS, g) || FALLBACK_COLORS[idx % FALLBACK_COLORS.length];
+
+      // Agrupa por segmento y agrega por cosecha
+      const segMaps = {};
+      segments.forEach(seg => {
+        const rows = filteredRows.filter(r => keyOf(r) === groupKey(seg));
+        segMaps[seg] = aggregateByCohort(rows).cohortMap;
+      });
+
+      if (filteredRows.length === 0 || !filteredRows.some(r => r[GROUP_FIELD] !== undefined)) {
+        wrapper.innerHTML = `<div class="bg-white rounded-2xl card-shadow border border-gray-100 p-10 text-center text-sm text-gray-400 font-medium">No hay datos de ${isModelos ? 'modelo' : 'segmento'} disponibles (columna "${GROUP_FIELD}") para esta selección.</div>`;
+        return;
+      }
+
+      const useAdjSaldos = currentProduct === 'departamental';
+
+      METRICS_DEFINITIONS.forEach(metric => {
+        const metricTitle = getMetricProperty(metric, 'title');
+        const ctaMoraCol = getMetricProperty(metric, 'ctaMoraCol');
+        const sdoMoraCol = getMetricProperty(metric, 'sdoMoraCol');
+        const { ctaTotCol, sdoTotCol, sdoMoraAdjCol, sdoTotAdjCol } = metric;
+
+        const metricTargets = getMetricTargets(metric, currentProduct);
+        const dataObjAccounts = metricTargets.accounts;
+        const dataObjSaldos = metricTargets.saldos;
+
+        const accDatasets = [];
+        const sdoDatasets = [];
+        const accLasts = [];
+        const sdoLasts = [];
+
+        // Solo cosechas maduras para esta métrica
+        const metricCohorts = buildMetricCohorts(metric);
+
+        segments.forEach((seg, segIdx) => {
+          const map = segMaps[seg];
+          const accSeries = [];
+          const sdoSeries = [];
+          metricCohorts.forEach(ch => {
+            const c = map[ch];
+            if (!c) { accSeries.push(null); sdoSeries.push(null); return; }
+            const ctaTot = c[ctaTotCol] || 0;
+            const ctaMora = c[ctaMoraCol] || 0;
+            accSeries.push(ctaTot > 0 ? parseFloat(((ctaMora / ctaTot) * 100).toFixed(2)) : null);
+
+            const sTot = useAdjSaldos ? (c[sdoTotAdjCol] || 0) : (c[sdoTotCol] || 0);
+            const sMora = useAdjSaldos ? (c[sdoMoraAdjCol] || 0) : (c[sdoMoraCol] || 0);
+            sdoSeries.push(sTot > 0 ? parseFloat(((sMora / sTot) * 100).toFixed(2)) : null);
+          });
+
+          const color = colorOf(seg, segIdx);
+          const base = { borderColor: color, backgroundColor: color, borderWidth: 2, tension: 0.2, pointRadius: 0, pointHoverRadius: 5, fill: false, spanGaps: false };
+          accDatasets.push({ ...base, label: seg, data: accSeries });
+          sdoDatasets.push({ ...base, label: seg, data: sdoSeries });
+          accLasts.push({ seg, color, val: getValidLastValue(accSeries) });
+          sdoLasts.push({ seg, color, val: getValidLastValue(sdoSeries) });
+        });
+
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-4 md:p-6 rounded-2xl card-shadow border border-gray-100';
+        rowDiv.appendChild(createSegmentCardHtml(metric, 'accounts', accLasts, dataObjAccounts, metricTitle));
+        rowDiv.appendChild(createSegmentCardHtml(metric, 'saldos', sdoLasts, dataObjSaldos, metricTitle));
+        wrapper.appendChild(rowDiv);
+
+        initChartJs(`${metric.id}_accounts`, metric, 'accounts', null, null, prodConfig, dataObjAccounts, accDatasets, metricCohorts);
+        initChartJs(`${metric.id}_saldos`, metric, 'saldos', null, null, prodConfig, dataObjSaldos, sdoDatasets, metricCohorts);
+      });
+    }
+
+    function createSegmentCardHtml(metric, type, lasts, dataObj, metricTitle) {
+      const card = document.createElement('div');
+      card.className = 'relative flex flex-col justify-between h-[300px] w-full bg-white rounded-lg p-2';
+
+      const canvasContainer = document.createElement('div');
+      canvasContainer.className = 'relative w-full h-full pt-4';
+      canvasContainer.innerHTML = `<canvas id="${metric.id}_${type}"></canvas>`;
+      const title = document.createElement('div');
+      title.className = 'text-center text-xs font-extrabold uppercase tracking-wide text-gray-600';
+      title.innerText = metricTitle;
+      card.appendChild(title);
+      card.appendChild(canvasContainer);
+      return card;
     }
 
     function getValidLastValue(arr) {
@@ -894,39 +1204,85 @@
       return 0;
     }
 
-    function createChartCardHtml(metric, type, currentVal, dataObj, customTitle) {
+    function createChartCardHtml(metric, type, currentVal, dataObj, customTitle, adjVal) {
       const metricTitle = customTitle || getMetricProperty(metric, 'title');
-      const status = currentVal <= dataObj.target ? 'green' : (currentVal <= dataObj.targetMax ? 'yellow' : 'red');
-      const badgeStyle = status === 'green' ? 'bg-[#51cf66] text-gray-900 font-extrabold' : (status === 'yellow' ? 'bg-[#fcc419] text-gray-900 font-extrabold' : 'bg-[#ff6b6b] text-white font-extrabold');
+      const hasAdj = adjVal !== undefined && adjVal !== null;
+
+      const buildBadge = (val, label) => {
+        const status = val <= dataObj.target ? 'green' : (val <= dataObj.targetMax ? 'yellow' : 'red');
+        const badgeStyle = status === 'green' ? 'bg-[#51cf66] text-gray-900 font-extrabold' : (status === 'yellow' ? 'bg-[#fcc419] text-gray-900 font-extrabold' : 'bg-[#ff6b6b] text-white font-extrabold');
+        const el = document.createElement('div');
+        el.className = `${hasAdj ? 'px-2 min-w-[78px]' : 'px-3'} py-1.5 rounded-lg text-center shadow-sm ${badgeStyle}`;
+        el.innerHTML = `
+          <div class="text-[10px] uppercase font-bold tracking-tight opacity-90 whitespace-nowrap">${label}</div>
+          <div class="text-xl font-black leading-none mt-0.5">${val}%</div>
+          <div class="text-[9px] font-bold opacity-80 mt-1 border-t border-black/15 pt-0.5 whitespace-nowrap">Target: ${dataObj.target}%</div>
+        `;
+        return el;
+      };
 
       const card = document.createElement('div');
-      card.className = 'relative flex flex-col justify-between h-[280px] w-full bg-white rounded-lg p-2';
+      card.className = 'relative flex flex-col justify-between h-[380px] w-full bg-white rounded-lg p-2';
 
-      const badge = document.createElement('div');
-      badge.className = `absolute top-1 right-2 px-3 py-1.5 rounded-lg text-center shadow-sm z-10 ${badgeStyle}`;
-      badge.innerHTML = `
-        <div class="text-[10px] uppercase font-bold tracking-tight opacity-90">${metricTitle}</div>
-        <div class="text-xl font-black leading-none mt-0.5">${currentVal}%</div>
-        <div class="text-[9px] font-bold opacity-80 mt-1 border-t border-black/15 pt-0.5 whitespace-nowrap">Target: ${dataObj.target}%</div>
-      `;
+      // Contenedor de semáforos (uno normal; dos en Visa-Saldos: Total + Sin fraude)
+      const badges = document.createElement('div');
+      badges.className = 'absolute -top-2 right-2 flex gap-2 z-10';
+      if (hasAdj) {
+        badges.appendChild(buildBadge(currentVal, 'Total'));
+        badges.appendChild(buildBadge(adjVal, 'Sin fraude'));
+      } else {
+        badges.appendChild(buildBadge(currentVal, metricTitle));
+      }
 
       const canvasContainer = document.createElement('div');
-      canvasContainer.className = 'relative w-full h-full pt-4';
+      canvasContainer.className = 'relative w-full h-full pt-[80px]';
       canvasContainer.innerHTML = `<canvas id="${metric.id}_${type}"></canvas>`;
 
-      card.appendChild(badge);
+      // Título de la métrica (igual que en Segmento y Modelos); con dos semáforos se alinea a la izquierda
+      const title = document.createElement('div');
+      title.className = hasAdj
+        ? 'absolute top-3 left-3 text-left text-xs font-extrabold uppercase tracking-wide text-gray-600 pointer-events-none'
+        : 'absolute top-3 inset-x-0 text-center text-xs font-extrabold uppercase tracking-wide text-gray-600 pointer-events-none';
+      title.innerText = metricTitle;
+
+      card.appendChild(title);
+      card.appendChild(badges);
       card.appendChild(canvasContainer);
       return card;
     }
 
-    function initChartJs(canvasId, metric, type, seriesDataPrimary, seriesDataSecondary, prodConfig, dataObj) {
+    function initChartJs(canvasId, metric, type, seriesDataPrimary, seriesDataSecondary, prodConfig, dataObj, customDatasets, labels) {
       const canvasElem = document.getElementById(canvasId);
       if (!canvasElem) return;
       const ctx = canvasElem.getContext('2d');
       const datasets = [];
       const metricTitle = getMetricProperty(metric, 'title');
 
-      if (type === 'accounts') {
+      if (customDatasets) {
+        customDatasets.forEach(d => datasets.push(d));
+      } else if (type === 'accounts' && currentProduct === 'visa') {
+        datasets.push({
+          label: `${metricTitle} (Cuentas Totales)`,
+          data: seriesDataPrimary,
+          borderColor: '#1e293b',
+          borderWidth: 2,
+          tension: 0.2,
+          pointRadius: 0,
+          pointHoverRadius: 5,
+          fill: false
+        });
+        datasets.push({
+          label: `${metricTitle} (Cuentas Ajustadas)`,
+          data: seriesDataSecondary,
+          borderColor: '#e53935',
+          borderWidth: 2,
+          borderDash: [5, 4],
+          tension: 0.2,
+          pointRadius: 0,
+          pointHoverRadius: 5,
+          fill: false
+        });
+      } else if (type === 'accounts') {
         datasets.push({
           label: metricTitle,
           data: seriesDataPrimary,
@@ -986,7 +1342,11 @@
       }
 
       let scaleConfig = { min: 0, max: 10, stepSize: 1 };
-      if (metric.scales && metric.scales[currentProduct] && metric.scales[currentProduct][type]) {
+      const sectionScale = SECTION_SCALES[currentSection];
+      if (customDatasets && sectionScale && sectionScale[type]) {
+        // Segmento y Modelos usan escalas propias (iguales para todos los productos y métricas)
+        scaleConfig = sectionScale[type];
+      } else if (metric.scales && metric.scales[currentProduct] && metric.scales[currentProduct][type]) {
         scaleConfig = metric.scales[currentProduct][type];
       } else if (metric.scales && metric.scales.default && metric.scales.default[type]) {
         scaleConfig = metric.scales.default[type];
@@ -1006,7 +1366,7 @@
 
       const chart = new Chart(ctx, {
         type: 'line',
-        data: { labels: cohortLabels, datasets: datasets },
+        data: { labels: labels || cohortLabels, datasets: datasets },
         plugins: [targetLinesPlugin, modelUpdateLinePlugin],
         options: {
           responsive: true,
@@ -1063,7 +1423,7 @@
                     `Target Max: ${dataObj.targetMax}%`
                   ];
                   const currentLabel = ctxArr[0]?.label;
-                  const modelCohort = prodConfig.modelUpdateCohort;
+                  const modelCohort = customDatasets ? null : prodConfig.modelUpdateCohort;
                   if (currentLabel === modelCohort) {
                     lines.unshift('------------------------', '⚡ Implementación del último modelo');
                   }
@@ -1072,7 +1432,7 @@
               }
             },
             customTarget: { target: dataObj.target, targetMin: dataObj.targetMin, targetMax: dataObj.targetMax },
-            customModelUpdate: prodConfig.modelUpdateCohort
+            customModelUpdate: customDatasets ? null : prodConfig.modelUpdateCohort
           },
           scales: {
             x: { grid: { display: false }, ticks: { font: { size: 9, family: 'Montserrat' }, color: '#333333', maxRotation: 45, minRotation: 45 } },
@@ -1086,6 +1446,7 @@
 
     /* ESTACIONALIDAD */
     function renderSeasonalitySection(cohortMap) {
+      updateSeasonalityFraudBtn();
       renderYearChips();
       renderSeasonalityCharts(cohortMap);
     }
@@ -1108,7 +1469,7 @@
         btn.innerHTML = `
           <span class="w-2.5 h-2.5 rounded-full inline-block" style="background-color: ${isSelected ? color : '#cbd5e1'};"></span>
           <span>${year}</span>
-          ${isSelected ? '<i class="fa-solid fa-check text-[10px] text-purple-600 ml-1"></i>' : ''}
+          ${isSelected ? '<svg class="ic text-[10px] text-purple-600 ml-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l5 5L20 6"/></svg>' : ''}
         `;
 
         container.appendChild(btn);
@@ -1130,6 +1491,26 @@
       renderDashboard();
     }
 
+    function updateSeasonalityFraudBtn() {
+      const btn = document.getElementById('seasonality-fraud-btn');
+      if (!btn) return;
+      const isVisa = currentProduct === 'visa';
+      btn.classList.toggle('hidden', !isVisa);
+      if (!isVisa) seasonalityNoFraud = false; // fuera de Visa siempre vuelve a la vista normal
+      btn.textContent = seasonalityNoFraud ? 'Fraudes: Off' : 'Fraudes: On';
+      btn.classList.toggle('bg-purple-600', seasonalityNoFraud);
+      btn.classList.toggle('text-white', seasonalityNoFraud);
+      btn.classList.toggle('border-purple-600', seasonalityNoFraud);
+      btn.classList.toggle('bg-gray-50', !seasonalityNoFraud);
+      btn.classList.toggle('text-purple-900', !seasonalityNoFraud);
+      btn.classList.toggle('border-gray-200', !seasonalityNoFraud);
+    }
+
+    function toggleSeasonalityFraud() {
+      seasonalityNoFraud = !seasonalityNoFraud;
+      renderDashboard();
+    }
+
     function onSeasonalityMetricChange(metricId) {
       selectedSeasonalityMetric = metricId;
       renderDashboard();
@@ -1144,6 +1525,9 @@
       const sdoTotCol = getMetricProperty(metricObj, 'sdoTotCol');
       const sdoMoraAdjCol = getMetricProperty(metricObj, 'sdoMoraAdjCol');
       const sdoTotAdjCol = getMetricProperty(metricObj, 'sdoTotAdjCol');
+      const ctaMoraAdjCol = getMetricProperty(metricObj, 'ctaMoraAdjCol');
+      const ctaTotAdjCol = getMetricProperty(metricObj, 'ctaTotAdjCol');
+      const useAdj = currentProduct === 'visa' && seasonalityNoFraud;
 
       const datasetsAccounts = [];
       const datasetsSaldos = [];
@@ -1158,13 +1542,14 @@
           const key = `${months[m]} ${year}`;
           const cData = cohortMap ? cohortMap[key] : null;
 
-          if (cData) {
-            const ctaTot = cData[ctaTotCol] || 0;
-            const ctaMora = cData[ctaMoraCol] || 0;
+          if (cData && isCohortMature(cData.rawDate, metricObj)) {
+            const ctaTot = useAdj ? (cData[ctaTotAdjCol] || 0) : (cData[ctaTotCol] || 0);
+            const ctaMora = useAdj ? (cData[ctaMoraAdjCol] || 0) : (cData[ctaMoraCol] || 0);
             accData.push(ctaTot > 0 ? parseFloat(((ctaMora / ctaTot) * 100).toFixed(2)) : null);
 
-            const sdoTot = currentProduct === 'departamental' ? (cData[sdoTotAdjCol] || 0) : (cData[sdoTotCol] || 0);
-            const sdoMora = currentProduct === 'departamental' ? (cData[sdoMoraAdjCol] || 0) : (cData[sdoMoraCol] || 0);
+            const useAdjSdo = useAdj || currentProduct === 'departamental';
+            const sdoTot = useAdjSdo ? (cData[sdoTotAdjCol] || 0) : (cData[sdoTotCol] || 0);
+            const sdoMora = useAdjSdo ? (cData[sdoMoraAdjCol] || 0) : (cData[sdoMoraCol] || 0);
             salData.push(sdoTot > 0 ? parseFloat(((sdoMora / sdoTot) * 100).toFixed(2)) : null);
           } else {
             accData.push(null);
@@ -1176,8 +1561,9 @@
         datasetsSaldos.push({ label: `${year}`, data: salData, borderColor: color, backgroundColor: color, borderWidth: 2, tension: 0.2, pointRadius: 2, spanGaps: false });
       });
 
-      createOrUpdateSeasonalityChart('seasonality_chart_accounts', metricTitle, datasetsAccounts);
-      createOrUpdateSeasonalityChart('seasonality_chart_saldos', metricTitle, datasetsSaldos);
+      const titleSuffix = useAdj ? ' · Sin fraude' : '';
+      createOrUpdateSeasonalityChart('seasonality_chart_accounts', metricTitle + titleSuffix, datasetsAccounts);
+      createOrUpdateSeasonalityChart('seasonality_chart_saldos', metricTitle + titleSuffix, datasetsSaldos);
     }
 
     function createOrUpdateSeasonalityChart(canvasId, metricTitle, datasets) {
@@ -1189,6 +1575,9 @@
       const canvasElem = document.getElementById(canvasId);
       if (!canvasElem) return;
       const ctx = canvasElem.getContext('2d');
+
+      // Eje Y fijo para todos los productos y periodos de mora: Saldos 0-10%, Cuentas 0-6% (saltos de 2%)
+      const yMax = canvasId === 'seasonality_chart_saldos' ? 10 : 6;
 
       chartInstances[canvasId] = new Chart(ctx, {
         type: 'line',
@@ -1210,10 +1599,25 @@
           },
           scales: {
             x: { grid: { display: false }, ticks: { font: { size: 10, family: 'Montserrat', weight: '600' }, color: '#4b5563' } },
-            y: { min: 0, grid: { color: '#f3f4f6' }, ticks: { callback: (v) => v + '%', font: { size: 10, family: 'Montserrat' }, color: '#6b7280' } }
+            y: { min: 0, max: yMax, grid: { color: '#f3f4f6' }, ticks: { stepSize: 2, callback: (v) => v + '%', font: { size: 10, family: 'Montserrat' }, color: '#6b7280' } }
           }
         }
       });
+    }
+
+    const SEG_FACTOR = { 'PURO': 2.2, 'X-SELL': 1.0, 'DOBLE': 0.9, 'THIN FILE': 2.0, 'NOHIT': 1.6, 'HIT': 0.9 };
+
+    function mockModelLabel(tip, seg, y, m) {
+      const t = y * 100 + (m + 1);
+      if (tip === 200) {
+        if (seg === 'PURO') return t < 202507 ? 'PURO 2020' : 'PURO 2025';
+        if (seg === 'DOBLE') return t < 202311 ? 'DOBLE 2020' : (t < 202507 ? 'DOBLE 2023' : 'DOBLE 2025');
+        return t < 202401 ? 'X-SELL 2020' : 'X-SELL 2024';
+      }
+      const yr = t < 202007 ? '2018' : (t < 202402 ? '2020' : '2024');
+      if (seg === 'HIT') return 'HIT ' + yr;
+      if (seg === 'X-SELL' && t >= 202408) return 'QUASH';
+      return 'NO HIT ' + yr;
     }
 
     function generateMockBackendData() {
@@ -1230,7 +1634,7 @@
           let peakFactorSdo = (y === 2019 || (y === 2020 && m < 6)) ? 4.2 : 1.0;
 
           ['TIENDA', 'DIGITAL', 'KIOSKO'].forEach(canal => {
-            ['HIT', 'NO_HIT'].forEach(hit => {
+            ['NORTE', 'CENTRO', 'SUR'].forEach(zona => {
               [200, 210].forEach(tip => {
                 const baseCta = 1000;
                 const baseSdo = 100000;
@@ -1238,18 +1642,21 @@
                 const accRate = (0.014 + Math.random() * 0.006) * peakFactorAcc;
                 const sdoRate = (0.024 + Math.random() * 0.012) * peakFactorSdo;
 
-                rawDataTotal.push({
-                  COSECHA: fecha, CANAL2: canal, BR_HIT_DES: hit, TIP_INF: tip,
-                  CTA_TOT_2M: baseCta, SDO_TOT_2M: baseSdo, CTA_ENTRY_2M: Math.floor(baseCta * accRate), SDO_ENTRY_2M: baseSdo * sdoRate,
-                  CTA_TOT_2M_ADJ: baseCta, SDO_TOT_2M_ADJ: baseSdo, CTA_ENTRY_2M_ADJ: Math.floor(baseCta * accRate * 0.95), SDO_ENTRY_2M_ADJ: baseSdo * sdoRate * 0.95,
-                  CTA_TOT_3M: baseCta, SDO_TOT_3M: baseSdo, CTA_30_3M: Math.floor(baseCta * 0.01), SDO_30_3M: baseSdo * 0.02,
-                  CTA_TOT_3M_ADJ: baseCta, SDO_TOT_3M_ADJ: baseSdo, CTA_30_3M_ADJ: Math.floor(baseCta * 0.009), SDO_30_3M_ADJ: baseSdo * 0.018,
-                  CTA_TOT_6M: baseCta, SDO_TOT_6M: baseSdo, CTA_30_6M: Math.floor(baseCta * 0.02), SDO_30_6M: baseSdo * 0.05,
-                  CTA_TOT_6M_ADJ: baseCta, SDO_TOT_6M_ADJ: baseSdo, CTA_30_6M_ADJ: Math.floor(baseCta * 0.019), SDO_30_6M_ADJ: baseSdo * 0.048,
-                  CTA_TOT_9M: baseCta, SDO_TOT_9M: baseSdo, CTA_90_9M: Math.floor(baseCta * 0.02), SDO_90_9M: baseSdo * 0.05,
-                  CTA_TOT_9M_ADJ: baseCta, SDO_TOT_9M_ADJ: baseSdo, CTA_90_9M_ADJ: Math.floor(baseCta * 0.019), SDO_90_9M_ADJ: baseSdo * 0.048,
-                  CTA_TOT_12M: baseCta, SDO_TOT_12M: baseSdo, CTA_90_12M: Math.floor(baseCta * 0.025), SDO_90_12M: baseSdo * 0.08,
-                  CTA_TOT_12M_ADJ: baseCta, SDO_TOT_12M_ADJ: baseSdo, CTA_90_12M_ADJ: Math.floor(baseCta * 0.024), SDO_90_12M_ADJ: baseSdo * 0.078
+                (tip === 200 ? ['PURO', 'X-SELL', 'DOBLE'] : ['THIN FILE', 'NOHIT', 'HIT', 'X-SELL']).forEach(seg => {
+                  const segF = SEG_FACTOR[seg];
+                  rawDataTotal.push({
+                  COSECHA: fecha, CANAL2: canal, ZONA: zona, BR_HIT_DES: seg, TIP_INF: tip, BR_MODULO_SCORE_DES: mockModelLabel(tip, seg, y, m),
+                  CTA_TOT_2M: baseCta, SDO_TOT_2M: baseSdo, CTA_ENTRY_2M: Math.floor(baseCta * accRate * segF), SDO_ENTRY_2M: baseSdo * sdoRate * segF,
+                  CTA_TOT_2M_ADJ: baseCta, SDO_TOT_2M_ADJ: baseSdo, CTA_ENTRY_2M_ADJ: Math.floor(baseCta * accRate * segF * 0.95), SDO_ENTRY_2M_ADJ: baseSdo * sdoRate * segF * 0.95,
+                  CTA_TOT_3M: baseCta, SDO_TOT_3M: baseSdo, CTA_30_3M: Math.floor(baseCta * segF * 0.01), SDO_30_3M: baseSdo * segF * 0.02,
+                  CTA_TOT_3M_ADJ: baseCta, SDO_TOT_3M_ADJ: baseSdo, CTA_30_3M_ADJ: Math.floor(baseCta * segF * 0.009), SDO_30_3M_ADJ: baseSdo * segF * 0.018,
+                  CTA_TOT_6M: baseCta, SDO_TOT_6M: baseSdo, CTA_30_6M: Math.floor(baseCta * segF * 0.02), SDO_30_6M: baseSdo * segF * 0.05,
+                  CTA_TOT_6M_ADJ: baseCta, SDO_TOT_6M_ADJ: baseSdo, CTA_30_6M_ADJ: Math.floor(baseCta * segF * 0.019), SDO_30_6M_ADJ: baseSdo * segF * 0.048,
+                  CTA_TOT_9M: baseCta, SDO_TOT_9M: baseSdo, CTA_90_9M: Math.floor(baseCta * segF * 0.02), SDO_90_9M: baseSdo * segF * 0.05,
+                  CTA_TOT_9M_ADJ: baseCta, SDO_TOT_9M_ADJ: baseSdo, CTA_90_9M_ADJ: Math.floor(baseCta * segF * 0.019), SDO_90_9M_ADJ: baseSdo * segF * 0.048,
+                  CTA_TOT_12M: baseCta, SDO_TOT_12M: baseSdo, CTA_90_12M: Math.floor(baseCta * segF * 0.025), SDO_90_12M: baseSdo * segF * 0.08,
+                  CTA_TOT_12M_ADJ: baseCta, SDO_TOT_12M_ADJ: baseSdo, CTA_90_12M_ADJ: Math.floor(baseCta * segF * 0.024), SDO_90_12M_ADJ: baseSdo * segF * 0.078
+                });
                 });
               });
             });
